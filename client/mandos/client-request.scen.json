@@ -1,0 +1,68 @@
+{
+    "name": "ping in order to deposit funds",
+    "steps": [
+        {
+            "step": "externalSteps",
+            "path": "init.scen.json"
+        },
+        {
+            "step": "setState",
+            "currentBlockInfo": {
+                "blockNonce": "100"
+            }
+        },
+        {
+            "step": "scCall",
+            "tx": {
+                "from": "address:client1_owner",
+                "to": "address:client1_smart_contract",
+                "value": "0",
+                "function": "send_request",
+                "arguments": [],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "",
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "tx": {
+                "from": "address:client1_owner",
+                "to": "address:client1_smart_contract",
+                "value": "0",
+                "function": "get_client_data",
+                "arguments": [],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "out": [ "" ],
+                "status": "",
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "tx": {
+                "from": "address:oracle_owner",
+                "to": "address:oracle_smart_contract",
+                "value": "0",
+                "function": "get_requests",
+                "arguments": [],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "out": [ "" ],
+                "status": "",
+                "gas": "*",
+                "refund": "*"
+            }
+        }
+    ]
+}
