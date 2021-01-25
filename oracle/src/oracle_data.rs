@@ -4,8 +4,8 @@ derive_imports!();
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct OracleRequest {
-	pub nonce_key : u64,
-	pub caller_account: Address,
+    pub nonce_key: u64,
+    pub caller_account: Address,
     pub callback_address: Address,
     pub callback_method: BoxedBytes,
     pub data: BoxedBytes,
@@ -13,12 +13,12 @@ pub struct OracleRequest {
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct AccountNonceData {
-	pub address_key: Address,
-	pub nonce_value: u64,
+    pub address_key: Address,
+    pub nonce_value: u64,
 }
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct AccountRequestsData {
-	pub address_key: Address,
+    pub address_key: Address,
     pub requests_value: Vec<OracleRequest>,
 }

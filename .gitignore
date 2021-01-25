@@ -1,7 +1,10 @@
 # Elrond IDE
 **/node_modules
 **/output/**
+**/target/**
 **/testnet/**
 **/wallets/**
 **/erdpy.data-storage.json
 **/*.interaction.json
+Cargo.lock
+**/*.rs.bk

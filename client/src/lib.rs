@@ -43,7 +43,7 @@ pub trait Client {
 		Ok(())
 	}
 
-	#[callback]
+	#[endpoint]
 	fn reply(&self, nonce : u64, answer: BoxedBytes) -> SCResult<()> {
 		require!(self.get_caller() == self.get_oracle_address(), "Only oracle can reply");
 		self.set_client_data(Some(ClientData {

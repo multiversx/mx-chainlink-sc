@@ -52,13 +52,53 @@
                 "from": "address:oracle_owner",
                 "to": "address:oracle_smart_contract",
                 "value": "0",
-                "function": "get_requests",
+                "function": "get_requests_json",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
             },
             "expect": {
-                "out": [ "" ],
+                "out": [ "0x5b7b2261646472657373223a2236333663363936353665373433313566373336643631373237343566363336663665373437323631363337343566356635663566356635663566356635663566222c20226e6f6e6365223a22313030222c202264617461223a22227d5d" ],
+                "status": "",
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "tx": {
+                "from": "address:authorized_oracle_node",
+                "to": "address:oracle_smart_contract",
+                "value": "0",
+                "function": "fulfill_request",
+                "arguments": [
+                    "address:client1_smart_contract",
+                    "100",
+                    "str:42"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "out": [],
+                "status": "",
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "tx": {
+                "from": "address:client1_owner",
+                "to": "address:client1_smart_contract",
+                "value": "0",
+                "function": "get_client_data",
+                "arguments": [],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "out": [ "0x010000000000000064000000023432" ],
                 "status": "",
                 "gas": "*",
                 "refund": "*"
