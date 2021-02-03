@@ -57,13 +57,15 @@
                 "from": "address:oracle_owner",
                 "to": "address:oracle_smart_contract",
                 "value": "0",
-                "function": "requests",
+                "function": "requests_as_vec",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
             },
             "expect": {
-                "out": [],
+                "out": [
+                    "address:client1_smart_contract|u64:100|u32:0"
+                ],
                 "status": "",
                 "gas": "*",
                 "refund": "*"
