@@ -1,37 +1,26 @@
 [package]
 name = "client"
 version = "0.0.1"
-authors = [ "you",]
+authors = [ "Claudiu-Marcel Bruda <claudiu.bruda@elrond.com>",]
 edition = "2018"
 publish = false
 
 [lib]
 path = "src/lib.rs"
 
-[features]
-wasm-output-mode = [ "elrond-wasm-node", "elrond-wasm-module-users-wasm",]
-default = [ "elrond-wasm-module-users-default",]
-
-[dependencies.elrond-wasm-module-users-wasm]
-package = "elrond-wasm-module-users"
-version = "0.10.2"
-features = [ "wasm-output-mode",]
-optional = true
-
-[dependencies.elrond-wasm-module-users-default]
-package = "elrond-wasm-module-users"
-version = "0.10.2"
-optional = true
-
 [dependencies.elrond-wasm]
-version = "0.10.2"
+version = "0.10.5"
+path="../../elrond-wasm-rs/elrond-wasm"
 
 [dependencies.elrond-wasm-derive]
-version = "0.10.2"
+version = "0.10.5"
+path="../../elrond-wasm-rs/elrond-wasm-derive"
 
 [dependencies.elrond-wasm-node]
-version = "0.10.2"
+version = "0.10.5"
 optional = true
+path="../../elrond-wasm-rs/elrond-wasm-node"
 
 [dev-dependencies.elrond-wasm-debug]
-version = "0.10.2"
+version = "0.10.5"
+path="../../elrond-wasm-rs/elrond-wasm-debug"

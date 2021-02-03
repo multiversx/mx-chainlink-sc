@@ -21,12 +21,31 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 [[package]]
 name = "elrond-codec"
 version = "0.4.2"
+dependencies = [
+ "arrayvec",
+ "elrond-codec-derive 0.4.2",
+ "wee_alloc",
+]
+
+[[package]]
+name = "elrond-codec"
+version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1288631b4a787425de1a7086c772a4ff5ebc3ed490e528996965d9d8f077b53b"
 dependencies = [
  "arrayvec",
- "elrond-codec-derive",
+ "elrond-codec-derive 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "wee_alloc",
+]
+
+[[package]]
+name = "elrond-codec-derive"
+version = "0.4.2"
+dependencies = [
+ "hex",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -48,16 +67,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "46d42a98b7b6c132d3b9815a600fccb40ee83c436509b8470df8953883feab34"
 dependencies = [
  "arrayvec",
- "elrond-codec",
+ "elrond-codec 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hashbrown",
+ "wee_alloc",
+]
+
+[[package]]
+name = "elrond-wasm"
+version = "0.10.5"
+dependencies = [
+ "arrayvec",
+ "elrond-codec 0.4.2",
  "hashbrown",
  "wee_alloc",
 ]
 
 [[package]]
 name = "elrond-wasm-derive"
-version = "0.10.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "681f7c70ccc06f91f968b8f7f6b4702a8ea42aebb60f3bada4355379c01a6dab"
+version = "0.10.5"
 dependencies = [
  "hex",
  "proc-macro2",
@@ -71,7 +98,14 @@ version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "04c142a736b112e52c426aecbbc1768e88569eb45e56bb70f7b1911384ab84a1"
 dependencies = [
- "elrond-wasm",
+ "elrond-wasm 0.10.4",
+]
+
+[[package]]
+name = "elrond-wasm-node"
+version = "0.10.5"
+dependencies = [
+ "elrond-wasm 0.10.5",
 ]
 
 [[package]]
@@ -80,7 +114,7 @@ version = "0.10.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce8f5b147e77bb908c8763a6fcd23d53627fdeac230978cde1983050c3f25da7"
 dependencies = [
- "elrond-wasm-node",
+ "elrond-wasm-node 0.10.4",
  "wee_alloc",
 ]
 
@@ -115,9 +149,9 @@ checksum = "8452105ba047068f40ff7093dd1d9da90898e63dd61736462e9cdda6a90ad3c3"
 name = "oracle"
 version = "0.0.0"
 dependencies = [
- "elrond-wasm",
+ "elrond-wasm 0.10.5",
  "elrond-wasm-derive",
- "elrond-wasm-node",
+ "elrond-wasm-node 0.10.5",
 ]
 
 [[package]]

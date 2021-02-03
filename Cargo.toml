@@ -1,5 +1,5 @@
 [package]
-name = "oracle"
+name = "chainlink-tests"
 version = "0.0.1"
 authors = [ "Claudiu-Marcel Bruda <claudiu.bruda@elrond.com>",]
 edition = "2018"
@@ -8,22 +8,25 @@ publish = false
 [lib]
 path = "src/lib.rs"
 
-[features]
-wasm-output-mode = [ "elrond-wasm-node",]
+[dependencies.client]
+path = "client"
+
+[dependencies.oracle]
+path = "oracle"
 
 [dependencies.elrond-wasm]
 version = "0.10.5"
-path="../../elrond-wasm-rs/elrond-wasm"
+path="../elrond-wasm-rs/elrond-wasm"
 
 [dependencies.elrond-wasm-derive]
 version = "0.10.5"
-path="../../elrond-wasm-rs/elrond-wasm-derive"
+path="../elrond-wasm-rs/elrond-wasm-derive"
 
 [dependencies.elrond-wasm-node]
 version = "0.10.5"
 optional = true
-path="../../elrond-wasm-rs/elrond-wasm-node"
+path="../elrond-wasm-rs/elrond-wasm-node"
 
 [dev-dependencies.elrond-wasm-debug]
 version = "0.10.5"
-path="../../elrond-wasm-rs/elrond-wasm-debug"
+path="../elrond-wasm-rs/elrond-wasm-debug"

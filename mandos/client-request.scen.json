@@ -13,6 +13,7 @@
         },
         {
             "step": "scCall",
+            "txId": "send-request",
             "tx": {
                 "from": "address:client1_owner",
                 "to": "address:client1_smart_contract",
@@ -30,6 +31,7 @@
         },
         {
             "step": "scCall",
+            "txId": "check-client-data-empty",
             "tx": {
                 "from": "address:client1_owner",
                 "to": "address:client1_smart_contract",
@@ -40,7 +42,9 @@
                 "gasPrice": "0"
             },
             "expect": {
-                "out": [ "" ],
+                "out": [
+                    ""
+                ],
                 "status": "",
                 "gas": "*",
                 "refund": "*"
@@ -48,17 +52,18 @@
         },
         {
             "step": "scCall",
+            "txId": "check-oracle-requests",
             "tx": {
                 "from": "address:oracle_owner",
                 "to": "address:oracle_smart_contract",
                 "value": "0",
-                "function": "get_requests_json",
+                "function": "requests",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
             },
             "expect": {
-                "out": [ "0x5b7b2261646472657373223a2236333663363936353665373433313566373336643631373237343566363336663665373437323631363337343566356635663566356635663566356635663566222c20226e6f6e6365223a22313030222c202264617461223a22227d5d" ],
+                "out": [],
                 "status": "",
                 "gas": "*",
                 "refund": "*"
@@ -66,6 +71,7 @@
         },
         {
             "step": "scCall",
+            "txId": "oracle-fulfill-request",
             "tx": {
                 "from": "address:authorized_oracle_node",
                 "to": "address:oracle_smart_contract",
@@ -88,6 +94,7 @@
         },
         {
             "step": "scCall",
+            "txId": "check-client-answer",
             "tx": {
                 "from": "address:client1_owner",
                 "to": "address:client1_smart_contract",
@@ -98,7 +105,9 @@
                 "gasPrice": "0"
             },
             "expect": {
-                "out": [ "0x010000000000000064000000023432" ],
+                "out": [
+                    "0x010000000000000064000000023432"
+                ],
                 "status": "",
                 "gas": "*",
                 "refund": "*"
