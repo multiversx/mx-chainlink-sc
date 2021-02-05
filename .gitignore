@@ -6,5 +6,5 @@
 **/wallets/**
 **/erdpy.data-storage.json
 **/*.interaction.json
-Cargo.lock
+**/Cargo.lock
 **/*.rs.bk
