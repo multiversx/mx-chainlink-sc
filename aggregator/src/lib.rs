@@ -11,8 +11,6 @@ mod aggregator_interface;
 use aggregator_interface::RoundData;
 use elrond_wasm::elrond_codec;
 
-const VERSION: u64 = 3;
-
 const RESERVE_ROUNDS: u64 = 2;
 const ROUND_MAX: u64 = u64::MAX;
 
@@ -35,10 +33,6 @@ fn median(mut numbers: Vec<u64>) -> u64 {
 pub trait Aggregator {
     #[storage_mapper("link_token")]
     fn link_token(&self) -> SingleValueMapper<Self::Storage, TokenIdentifier>;
-
-    //AggregatorValidatorInterface public validator;
-    #[storage_mapper("validator")]
-    fn validator(&self) -> SingleValueMapper<Self::Storage, Address>;
 
     // Round related params
     #[storage_mapper("payment_amount")]
@@ -92,26 +86,20 @@ pub trait Aggregator {
     #[storage_mapper("description")]
     fn description(&self) -> SingleValueMapper<Self::Storage, String>;
 
-    #[storage_mapper("version")]
-    fn version(&self) -> SingleValueMapper<Self::Storage, u64>;
-
     #[init]
     fn init(
         &self,
         link_token: TokenIdentifier,
         payment_amount: BigUint,
         timeout: u64,
-        validator: Address,
         min_submission_value: u64,
         max_submission_value: u64,
         decimals: u8,
         description: String,
     ) -> SCResult<()> {
-        set_value(self.version(), VERSION);
         set_value(self.link_token(), link_token);
 
         sc_try!(self.update_future_rounds(payment_amount, 0, 0, 0, timeout));
-        set_value(self.validator(), validator);
         set_value(self.min_submission_value(), min_submission_value);
         set_value(self.max_submission_value(), max_submission_value);
         set_value(self.decimals(), decimals);
