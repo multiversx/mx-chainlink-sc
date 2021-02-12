@@ -8,7 +8,6 @@ use elrond_wasm::{
 mod aggregator_data;
 use aggregator_data::{Funds, OracleRoundState, OracleStatus, Requester, Round, RoundDetails};
 mod aggregator_interface;
-use aggregator_interface::RoundData;
 use elrond_wasm::elrond_codec;
 
 const RESERVE_ROUNDS: u64 = 2;
@@ -23,10 +22,10 @@ where
     storage.save();
 }
 
-fn median(mut numbers: Vec<u64>) -> u64 {
+fn median<BigUint: BigUintApi>(mut numbers: Vec<BigUint>) -> BigUint {
     numbers.sort();
     let mid = numbers.len() / 2;
-    numbers[mid]
+    numbers[mid].clone()
 }
 
 #[elrond_wasm_derive::contract(AggregatorImpl)]
@@ -51,10 +50,10 @@ pub trait Aggregator {
     fn timeout(&self) -> SingleValueMapper<Self::Storage, u64>;
 
     #[storage_mapper("min_submission_value")]
-    fn min_submission_value(&self) -> SingleValueMapper<Self::Storage, u64>;
+    fn min_submission_value(&self) -> SingleValueMapper<Self::Storage, BigUint>;
 
     #[storage_mapper("max_submission_value")]
-    fn max_submission_value(&self) -> SingleValueMapper<Self::Storage, u64>;
+    fn max_submission_value(&self) -> SingleValueMapper<Self::Storage, BigUint>;
 
     #[storage_mapper("reporting_round_id")]
     fn reporting_round_id(&self) -> SingleValueMapper<Self::Storage, u64>;
@@ -69,7 +68,7 @@ pub trait Aggregator {
     fn oracles(&self) -> MapMapper<Self::Storage, Address, OracleStatus<BigUint>>;
 
     #[storage_mapper("rounds")]
-    fn rounds(&self) -> MapMapper<Self::Storage, u64, Round>;
+    fn rounds(&self) -> MapMapper<Self::Storage, u64, Round<BigUint>>;
 
     #[storage_mapper("details")]
     fn details(&self) -> MapMapper<Self::Storage, u64, RoundDetails<BigUint>>;
@@ -92,8 +91,8 @@ pub trait Aggregator {
         link_token: TokenIdentifier,
         payment_amount: BigUint,
         timeout: u64,
-        min_submission_value: u64,
-        max_submission_value: u64,
+        min_submission_value: BigUint,
+        max_submission_value: BigUint,
         decimals: u8,
         description: String,
     ) -> SCResult<()> {
@@ -105,11 +104,11 @@ pub trait Aggregator {
         set_value(self.decimals(), decimals);
         set_value(self.description(), description);
 
-        //rounds[0].updatedAt = uint64(block.timestamp.sub(uint256(_timeout)));
         self.rounds().insert(
             0,
             Round {
-                answer: 0,
+                round_id: 0,
+                answer: BigUint::zero(),
                 started_at: 0,
                 updated_at: self.get_block_timestamp() - timeout,
                 answered_in_round: 0,
@@ -119,7 +118,7 @@ pub trait Aggregator {
         Ok(())
     }
 
-    fn submit(&self, round_id: u64, submission: u64) -> SCResult<()> {
+    fn submit(&self, round_id: u64, submission: BigUint) -> SCResult<()> {
         sc_try!(self.validate_oracle_round(&self.get_caller(), &round_id));
         require!(
             submission >= self.min_submission_value().value,
@@ -230,22 +229,15 @@ pub trait Aggregator {
     }
 
     #[view]
-    fn get_round_data(&self, round_id: u64) -> SCResult<RoundData> {
-        if let Some(r) = self.rounds().get(&round_id) {
-            require!(r.answered_in_round > 0, "No data present");
-            return Ok(RoundData {
-                round_id,
-                answer: r.answer,
-                started_at: r.started_at,
-                updated_at: r.updated_at,
-                answered_in_round: r.answered_in_round,
-            });
+    fn get_round_data(&self, round_id: u64) -> SCResult<Round<BigUint>> {
+        if let Some(round) = self.rounds().get(&round_id) {
+            return Ok(round);
         }
         sc_error!("No data present")
     }
 
     #[view]
-    fn latest_round_data(&self) -> SCResult<RoundData> {
+    fn latest_round_data(&self) -> SCResult<Round<BigUint>> {
         self.get_round_data(self.latest_round_id().value)
     }
 
@@ -417,7 +409,8 @@ pub trait Aggregator {
         self.rounds().insert(
             round_id.clone(),
             Round {
-                answer: 0,
+                round_id: round_id.clone(),
+                answer: BigUint::zero(),
                 started_at: self.get_block_timestamp(),
                 updated_at: 0,
                 answered_in_round: 0,
@@ -505,7 +498,7 @@ pub trait Aggregator {
         // the shouldSupersede bool in the if condition pushes them towards
         // submitting in a currently open round.
         let mut eligible_to_submit: bool;
-        let round: Round;
+        let round: Round<BigUint>;
         let round_id: u64;
         let payment_amount: BigUint;
         if sc_try!(self.supersedable(&reporting_round_id)) && should_supersede {
@@ -542,7 +535,7 @@ pub trait Aggregator {
         })
     }
 
-    fn update_round_answer(&self, round_id: u64) -> SCResult<Option<u64>> {
+    fn update_round_answer(&self, round_id: u64) -> SCResult<Option<BigUint>> {
         let details = sc_try!(self.get_round_details(&round_id));
         if (details.submissions.len() as u64) < details.min_submissions {
             return Ok(None);
@@ -550,7 +543,7 @@ pub trait Aggregator {
 
         let new_answer = median(details.submissions);
         let mut round = sc_try!(self.get_round(&round_id));
-        round.answer = new_answer;
+        round.answer = new_answer.clone();
         round.updated_at = self.get_block_timestamp();
         round.answered_in_round = round_id;
         self.rounds().insert(round_id, round);
@@ -575,7 +568,7 @@ pub trait Aggregator {
         Ok(())
     }
 
-    fn record_submission(&self, submission: u64, round_id: u64) -> SCResult<()> {
+    fn record_submission(&self, submission: BigUint, round_id: u64) -> SCResult<()> {
         require!(
             sc_try!(self.accepting_submissions(&round_id)),
             "round not accepting submissions"
@@ -584,7 +577,7 @@ pub trait Aggregator {
         let mut round_details = sc_try!(self.get_round_details(&round_id));
         let oracle = self.get_caller();
         let mut oracle_status = sc_try!(self.get_oracle_status(&oracle));
-        round_details.submissions.push(submission);
+        round_details.submissions.push(submission.clone());
         oracle_status.last_reported_round = round_id;
         oracle_status.latest_submission = submission;
         self.details().insert(round_id, round_details);
@@ -598,7 +591,6 @@ pub trait Aggregator {
                 return;
             }
         }
-
         self.details().remove(&round_id);
     }
 
@@ -642,7 +634,7 @@ pub trait Aggregator {
                 ending_round: ROUND_MAX,
                 last_reported_round: 0,
                 last_started_round: 0,
-                latest_submission: 0,
+                latest_submission: BigUint::zero(),
                 admin: admin.clone(),
                 pending_admin: None,
             },
@@ -716,7 +708,7 @@ pub trait Aggregator {
         sc_error!("No oracle at given address")
     }
 
-    fn get_round(&self, round_id: &u64) -> SCResult<Round> {
+    fn get_round(&self, round_id: &u64) -> SCResult<Round<BigUint>> {
         if let Some(round) = self.rounds().get(round_id) {
             return Ok(round);
         }
