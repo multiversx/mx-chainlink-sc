@@ -1,5 +1,5 @@
 [package]
-name = "oracle-wasm"
+name = "aggregator-wasm"
 version = "0.0.0"
 authors = [ "Claudiu-Marcel Bruda <claudiu.bruda@elrond.com>",]
 edition = "2018"
@@ -15,13 +15,13 @@ lto = true
 debug = false
 panic = "abort"
 
-[dependencies.oracle]
+[dependencies.aggregator]
 path = ".."
 features = ["wasm-output-mode"]
 default-features = false
 
 [dependencies.elrond-wasm-output]
-version = "0.10.4"
+version = "0.11.0"
 features = ["wasm-output-mode"]
 
 [workspace]

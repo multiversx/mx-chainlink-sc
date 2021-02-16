@@ -38,7 +38,7 @@ pub struct Requester {
     pub last_started_round: u64,
 }
 
-#[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
+#[derive(TopEncode, TopDecode, PartialEq, Clone, Copy)]
 pub struct Funds<BigUint: BigUintApi> {
     pub available: BigUint,
     pub allocated: BigUint,

@@ -1,26 +1,13 @@
 #![no_std]
 
 elrond_wasm::imports!();
-use elrond_wasm::{
-    api::{ErrorApi, StorageReadApi, StorageWriteApi},
-    String,
-};
+use elrond_wasm::String;
 mod aggregator_data;
 use aggregator_data::{Funds, OracleRoundState, OracleStatus, Requester, Round, RoundDetails};
 mod aggregator_interface;
-use elrond_wasm::elrond_codec;
 
 const RESERVE_ROUNDS: u64 = 2;
 const ROUND_MAX: u64 = u64::MAX;
-
-fn set_value<Storage, Value>(mut storage: SingleValueMapper<Storage, Value>, value: Value)
-where
-    Storage: StorageReadApi + StorageWriteApi + ErrorApi + Clone,
-    Value: elrond_codec::TopEncode + elrond_codec::TopDecode + 'static,
-{
-    storage.value = value;
-    storage.save();
-}
 
 fn median<BigUint: BigUintApi>(mut numbers: Vec<BigUint>) -> BigUint {
     numbers.sort();
@@ -31,35 +18,35 @@ fn median<BigUint: BigUintApi>(mut numbers: Vec<BigUint>) -> BigUint {
 #[elrond_wasm_derive::contract(AggregatorImpl)]
 pub trait Aggregator {
     #[storage_mapper("link_token")]
-    fn link_token(&self) -> SingleValueMapper<Self::Storage, TokenIdentifier>;
+    fn link_token(&self) -> GetterSetterMapper<Self::Storage, TokenIdentifier>;
 
     // Round related params
     #[storage_mapper("payment_amount")]
-    fn payment_amount(&self) -> SingleValueMapper<Self::Storage, BigUint>;
+    fn payment_amount(&self) -> GetterSetterMapper<Self::Storage, BigUint>;
 
     #[storage_mapper("max_submission_count")]
-    fn max_submission_count(&self) -> SingleValueMapper<Self::Storage, u64>;
+    fn max_submission_count(&self) -> GetterSetterMapper<Self::Storage, u64>;
 
     #[storage_mapper("min_submission_count")]
-    fn min_submission_count(&self) -> SingleValueMapper<Self::Storage, u64>;
+    fn min_submission_count(&self) -> GetterSetterMapper<Self::Storage, u64>;
 
     #[storage_mapper("restart_delay")]
-    fn restart_delay(&self) -> SingleValueMapper<Self::Storage, u64>;
+    fn restart_delay(&self) -> GetterSetterMapper<Self::Storage, u64>;
 
     #[storage_mapper("timeout")]
-    fn timeout(&self) -> SingleValueMapper<Self::Storage, u64>;
+    fn timeout(&self) -> GetterSetterMapper<Self::Storage, u64>;
 
     #[storage_mapper("min_submission_value")]
-    fn min_submission_value(&self) -> SingleValueMapper<Self::Storage, BigUint>;
+    fn min_submission_value(&self) -> GetterSetterMapper<Self::Storage, BigUint>;
 
     #[storage_mapper("max_submission_value")]
-    fn max_submission_value(&self) -> SingleValueMapper<Self::Storage, BigUint>;
+    fn max_submission_value(&self) -> GetterSetterMapper<Self::Storage, BigUint>;
 
     #[storage_mapper("reporting_round_id")]
-    fn reporting_round_id(&self) -> SingleValueMapper<Self::Storage, u64>;
+    fn reporting_round_id(&self) -> GetterSetterMapper<Self::Storage, u64>;
 
     #[storage_mapper("latest_round_id")]
-    fn latest_round_id(&self) -> SingleValueMapper<Self::Storage, u64>;
+    fn latest_round_id(&self) -> GetterSetterMapper<Self::Storage, u64>;
 
     #[storage_mapper("oracles")]
     fn oracle_addresses(&self) -> SetMapper<Self::Storage, Address>;
@@ -77,13 +64,13 @@ pub trait Aggregator {
     fn requesters(&self) -> MapMapper<Self::Storage, Address, Requester>;
 
     #[storage_mapper("recorded_funds")]
-    fn recorded_funds(&self) -> SingleValueMapper<Self::Storage, Funds<BigUint>>;
+    fn recorded_funds(&self) -> GetterSetterMapper<Self::Storage, Funds<BigUint>>;
 
     #[storage_mapper("decimals")]
-    fn decimals(&self) -> SingleValueMapper<Self::Storage, u8>;
+    fn decimals(&self) -> GetterSetterMapper<Self::Storage, u8>;
 
     #[storage_mapper("description")]
-    fn description(&self) -> SingleValueMapper<Self::Storage, String>;
+    fn description(&self) -> GetterSetterMapper<Self::Storage, String>;
 
     #[init]
     fn init(
@@ -96,13 +83,17 @@ pub trait Aggregator {
         decimals: u8,
         description: String,
     ) -> SCResult<()> {
-        set_value(self.link_token(), link_token);
+        self.link_token().set(link_token);
+        self.recorded_funds().set(Funds {
+            available: BigUint::zero(),
+            allocated: BigUint::zero(),
+        });
 
         sc_try!(self.update_future_rounds(payment_amount, 0, 0, 0, timeout));
-        set_value(self.min_submission_value(), min_submission_value);
-        set_value(self.max_submission_value(), max_submission_value);
-        set_value(self.decimals(), decimals);
-        set_value(self.description(), description);
+        self.min_submission_value().set(min_submission_value);
+        self.max_submission_value().set(max_submission_value);
+        self.decimals().set(decimals);
+        self.description().set(description);
 
         self.rounds().insert(
             0,
@@ -121,11 +112,11 @@ pub trait Aggregator {
     fn submit(&self, round_id: u64, submission: BigUint) -> SCResult<()> {
         sc_try!(self.validate_oracle_round(&self.get_caller(), &round_id));
         require!(
-            submission >= self.min_submission_value().value,
+            submission >= self.min_submission_value().get(),
             "value below min_submission_value"
         );
         require!(
-            submission <= self.max_submission_value().value,
+            submission <= self.max_submission_value().get(),
             "value above max_submission_value"
         );
 
@@ -137,6 +128,7 @@ pub trait Aggregator {
         Ok(())
     }
 
+    #[endpoint]
     fn change_oracles(
         &self,
         removed: Vec<Address>,
@@ -161,11 +153,11 @@ pub trait Aggregator {
         }
 
         sc_try!(self.update_future_rounds(
-            self.payment_amount().value,
+            self.payment_amount().get(),
             min_submissions,
             max_submissions,
             restart_delay,
-            self.timeout().value,
+            self.timeout().get(),
         ));
         Ok(())
     }
@@ -178,8 +170,12 @@ pub trait Aggregator {
         restart_delay: u64,
         timeout: u64,
     ) -> SCResult<()> {
-        only_owner!(self, "Only owner may call this function!");
         let oracle_num = self.oracle_count(); // Save on storage reads
+
+        // TODO: only_owner! fails when called from the constructor
+        if oracle_num > 0 {
+            only_owner!(self, "Only owner may call this function!");
+        }
         require!(
             max_submissions >= min_submissions,
             "max must equal/exceed min"
@@ -189,38 +185,39 @@ pub trait Aggregator {
             oracle_num == 0 || oracle_num > restart_delay,
             "delay cannot exceed total"
         );
-        let recorded_funds = self.recorded_funds().value;
+
+        let recorded_funds = self.recorded_funds().get();
+
         require!(
             recorded_funds.available >= self.required_reserve(&payment_amount),
             "insufficient funds for payment"
         );
-        require!(min_submissions > 0, "min must be greater than 0");
 
-        set_value(self.payment_amount(), payment_amount);
-        set_value(self.min_submission_count(), min_submissions);
-        set_value(self.max_submission_count(), max_submissions);
-        set_value(self.restart_delay(), restart_delay);
-        set_value(self.timeout(), timeout);
-
+        if oracle_num > 0 {
+            require!(min_submissions > 0, "min must be greater than 0");
+        }
+        self.payment_amount().set(payment_amount);
+        self.min_submission_count().set(min_submissions);
+        self.max_submission_count().set(max_submissions);
+        self.restart_delay().set(restart_delay);
+        self.timeout().set(timeout);
         Ok(())
     }
 
     #[view]
     fn allocated_funds(&self) -> BigUint {
-        self.recorded_funds().value.allocated
+        self.recorded_funds().get().allocated
     }
 
     #[view]
     fn available_funds(&self) -> BigUint {
-        self.recorded_funds().value.available
+        self.recorded_funds().get().available
     }
 
     fn update_available_funds(&self) {
-        let mut recorded_funds = self.recorded_funds();
+        let mut recorded_funds = self.recorded_funds().get_mut();
         // TODO: use get balance for given token instead of get_sc_balance
-        recorded_funds.value.available =
-            self.get_sc_balance() - recorded_funds.value.allocated.clone();
-        recorded_funds.save();
+        recorded_funds.available = self.get_sc_balance() - recorded_funds.allocated.clone();
     }
 
     #[view]
@@ -238,7 +235,7 @@ pub trait Aggregator {
 
     #[view]
     fn latest_round_data(&self) -> SCResult<Round<BigUint>> {
-        self.get_round_data(self.latest_round_id().value)
+        self.get_round_data(self.latest_round_id().get())
     }
 
     #[view]
@@ -263,27 +260,26 @@ pub trait Aggregator {
             "insufficient withdrawable funds"
         );
 
-        let mut recorded_funds = self.recorded_funds();
+        let mut recorded_funds = self.recorded_funds().get_mut();
         oracle_status.withdrawable -= &amount;
         self.oracles().insert(oracle, oracle_status);
-        recorded_funds.value.allocated -= &amount;
-        recorded_funds.save();
+        recorded_funds.allocated -= &amount;
 
         self.send()
-            .direct(&recipient, &self.link_token().value, &amount, b"");
+            .direct(&recipient, &self.link_token().get(), &amount, b"");
         Ok(())
     }
 
     fn withdraw_funds(&self, recipient: Address, amount: BigUint) -> SCResult<()> {
         only_owner!(self, "Only owner may call this function!");
-        let recorded_funds = self.recorded_funds();
+        let recorded_funds = self.recorded_funds().get();
         require!(
-            recorded_funds.value.available - self.required_reserve(&self.payment_amount().value)
+            recorded_funds.available - self.required_reserve(&self.payment_amount().get())
                 >= amount,
             "insufficient reserve funds"
         );
         self.send()
-            .direct(&recipient, &self.link_token().value, &amount, b"");
+            .direct(&recipient, &self.link_token().get(), &amount, b"");
         self.update_available_funds();
         Ok(())
     }
@@ -327,7 +323,7 @@ pub trait Aggregator {
             "not authorized requester"
         );
 
-        let current = self.reporting_round_id().value;
+        let current = self.reporting_round_id().get();
         require!(
             self.rounds()
                 .get(&current)
@@ -377,7 +373,7 @@ pub trait Aggregator {
         let round = sc_try!(self.get_round(&queried_round_id));
         let details = sc_try!(self.get_round_details(&queried_round_id));
         let oracle_status = sc_try!(self.get_oracle_status(&oracle));
-        let recorded_funds = self.recorded_funds().value;
+        let recorded_funds = self.recorded_funds().get();
         Ok(OracleRoundState {
             eligible_to_submit,
             round_id: queried_round_id,
@@ -389,7 +385,7 @@ pub trait Aggregator {
             payment_amount: if round.started_at > 0 {
                 details.payment_amount
             } else {
-                self.payment_amount().value
+                self.payment_amount().get()
             },
         })
     }
@@ -397,13 +393,13 @@ pub trait Aggregator {
     fn initialize_new_round(&self, round_id: &u64) -> SCResult<()> {
         sc_try!(self.update_timed_out_round_info(round_id - 1));
 
-        set_value(self.reporting_round_id(), round_id.clone());
+        self.reporting_round_id().set(round_id.clone());
         let next_details = RoundDetails {
             submissions: Vec::new(),
-            max_submissions: self.max_submission_count().value,
-            min_submissions: self.min_submission_count().value,
-            timeout: self.timeout().value,
-            payment_amount: self.payment_amount().value,
+            max_submissions: self.max_submission_count().get(),
+            min_submissions: self.min_submission_count().get(),
+            timeout: self.timeout().get(),
+            payment_amount: self.payment_amount().get(),
         };
         self.details().insert(round_id.clone(), next_details);
         self.rounds().insert(
@@ -423,7 +419,7 @@ pub trait Aggregator {
         sc_try!(self.new_round(&round_id));
         let oracle = self.get_caller();
         let mut oracle_status = sc_try!(self.get_oracle_status(&oracle));
-        let restart_delay = self.restart_delay().value;
+        let restart_delay = self.restart_delay().get();
         if round_id <= oracle_status.last_started_round + restart_delay
             && oracle_status.last_started_round != 0
         {
@@ -491,7 +487,7 @@ pub trait Aggregator {
     ) -> SCResult<OracleRoundState<BigUint>> {
         let oracle_status = sc_try!(self.get_oracle_status(oracle));
 
-        let reporting_round_id = self.reporting_round_id().value;
+        let reporting_round_id = self.reporting_round_id().get();
         let should_supersede = oracle_status.last_reported_round == reporting_round_id
             || !sc_try!(self.accepting_submissions(&reporting_round_id));
         // Instead of nudging oracles to submit to the next round, the inclusion of
@@ -505,7 +501,7 @@ pub trait Aggregator {
             round_id = reporting_round_id + 1;
             round = sc_try!(self.get_round(&round_id));
 
-            payment_amount = self.payment_amount().value;
+            payment_amount = self.payment_amount().get();
             eligible_to_submit = sc_try!(self.delayed(&oracle, &round_id));
         } else {
             round_id = reporting_round_id;
@@ -520,7 +516,7 @@ pub trait Aggregator {
             eligible_to_submit = false;
         }
 
-        let recorded_funds = self.recorded_funds().value;
+        let recorded_funds = self.recorded_funds().get();
         let round_details = sc_try!(self.get_round_details(&round_id));
 
         Ok(OracleRoundState {
@@ -547,7 +543,7 @@ pub trait Aggregator {
         round.updated_at = self.get_block_timestamp();
         round.answered_in_round = round_id;
         self.rounds().insert(round_id, round);
-        set_value(self.latest_round_id(), round_id);
+        self.latest_round_id().set(round_id);
 
         return Ok(Some(new_answer));
     }
@@ -558,10 +554,9 @@ pub trait Aggregator {
         let mut oracle_status = sc_try!(self.get_oracle_status(&oracle));
 
         let payment = round_details.payment_amount;
-        let mut recorded_funds = self.recorded_funds();
-        recorded_funds.value.available -= &payment;
-        recorded_funds.value.allocated += &payment;
-        recorded_funds.save();
+        let mut recorded_funds = self.recorded_funds().get_mut();
+        recorded_funds.available -= &payment;
+        recorded_funds.allocated += &payment;
 
         oracle_status.withdrawable += &payment;
         self.oracles().insert(oracle, oracle_status);
@@ -605,7 +600,7 @@ pub trait Aggregator {
     }
 
     fn get_starting_round(&self, oracle: &Address) -> SCResult<u64> {
-        let current_round = self.reporting_round_id().value;
+        let current_round = self.reporting_round_id().get();
         let oracle_status = sc_try!(self.get_oracle_status(&oracle));
         if current_round != 0 && current_round == oracle_status.ending_round {
             return Ok(current_round);
@@ -644,7 +639,7 @@ pub trait Aggregator {
 
     fn validate_oracle_round(&self, oracle: &Address, round_id: &u64) -> SCResult<()> {
         let oracle_status = sc_try!(self.get_oracle_status(&oracle));
-        let rr_id = self.reporting_round_id().value;
+        let rr_id = self.reporting_round_id().get();
 
         require!(oracle_status.starting_round != 0, "not enabled oracle");
         require!(
@@ -690,12 +685,12 @@ pub trait Aggregator {
     fn delayed(&self, oracle: &Address, round_id: &u64) -> SCResult<bool> {
         let oracle_status = sc_try!(self.get_oracle_status(oracle));
         let last_started = oracle_status.last_started_round;
-        Ok(*round_id > last_started + self.restart_delay().value || last_started == 0)
+        Ok(*round_id > last_started + self.restart_delay().get() || last_started == 0)
     }
 
     fn new_round(&self, round_id: &u64) -> SCResult<()> {
         require!(
-            *round_id == self.reporting_round_id().value + 1,
+            *round_id == self.reporting_round_id().get() + 1,
             "the last round and the new round must be consecutive"
         );
         Ok(())
