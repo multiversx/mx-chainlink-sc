@@ -1,0 +1,142 @@
+{
+    "name": "aggregator tests",
+    "steps": [
+        {
+            "step": "externalSteps",
+            "path": "init.scen.json"
+        },
+        {
+            "step": "scCall",
+            "txId": "1-set_requester_permissions - set the permissions for the requester, for starting a new round--",
+            "tx": {
+                "from": "address:aggregator_owner",
+                "to": "address:aggregator_smart_contract",
+                "value": "0",
+                "function": "set_requester_permissions",
+                "arguments": [
+                    "address:requester",
+                    "1",
+                    "0"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "2-request_new_round - create round 1--",
+            "tx": {
+                "from": "address:requester",
+                "to": "address:aggregator_smart_contract",
+                "value": "0",
+                "function": "request_new_round",
+                "arguments": [],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "out": [
+                    "1"
+                ],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "3-oracle_round_state - check the round state of oracle 1--",
+            "tx": {
+                "from": "address:oracle1_smart_contract",
+                "to": "address:aggregator_smart_contract",
+                "value": "0",
+                "function": "oracle_round_state",
+                "arguments": [
+                    "address:oracle1_smart_contract",
+                    "0"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "out": [
+                    "u8:1|u64:1|u32:0|u64:0|u64:1000|u32:3|0x5b8d80|u64:3|u32:3|0x0f4240"
+                ],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "4-submit - from oracle 1--",
+            "tx": {
+                "from": "address:oracle1_smart_contract",
+                "to": "address:aggregator_smart_contract",
+                "value": "0",
+                "function": "submit",
+                "arguments": [
+                    "1",
+                    "60"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "5-latest_round_data--",
+            "tx": {
+                "from": "address:oracle1_smart_contract",
+                "to": "address:aggregator_smart_contract",
+                "value": "0",
+                "function": "latest_round_data",
+                "arguments": [],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "out": [
+                    "u64:0|u32:0|u64:0|u64:0|u64:0"
+                ],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "5-submit - from oracle 2--",
+            "tx": {
+                "from": "address:oracle2_smart_contract",
+                "to": "address:aggregator_smart_contract",
+                "value": "0",
+                "function": "submit",
+                "arguments": [
+                    "1",
+                    "65"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        }
+    ]
+}

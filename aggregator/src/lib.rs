@@ -1,19 +1,15 @@
 #![no_std]
+#![feature(destructuring_assignment)]
 
 elrond_wasm::imports!();
 use elrond_wasm::String;
 mod aggregator_data;
 use aggregator_data::{Funds, OracleRoundState, OracleStatus, Requester, Round, RoundDetails};
 mod aggregator_interface;
+pub mod median;
 
 const RESERVE_ROUNDS: u64 = 2;
 const ROUND_MAX: u64 = u64::MAX;
-
-fn median<BigUint: BigUintApi>(mut numbers: Vec<BigUint>) -> BigUint {
-    numbers.sort();
-    let mid = numbers.len() / 2;
-    numbers[mid].clone()
-}
 
 #[elrond_wasm_derive::contract(AggregatorImpl)]
 pub trait Aggregator {
@@ -89,26 +85,30 @@ pub trait Aggregator {
             allocated: BigUint::zero(),
         });
 
-        sc_try!(self.update_future_rounds(payment_amount, 0, 0, 0, timeout));
+        sc_try!(self.update_future_rounds_internal(payment_amount, 0, 0, 0, timeout));
         self.min_submission_value().set(min_submission_value);
         self.max_submission_value().set(max_submission_value);
         self.decimals().set(decimals);
         self.description().set(description);
-
-        self.rounds().insert(
-            0,
-            Round {
-                round_id: 0,
-                answer: BigUint::zero(),
-                started_at: 0,
-                updated_at: self.get_block_timestamp() - timeout,
-                answered_in_round: 0,
-            },
-        );
-
+        self.reporting_round_id().set(0);
+        sc_try!(self.initialize_new_round(&0));
         Ok(())
     }
 
+    #[endpoint]
+    #[payable("*")]
+    fn add_funds(
+        &self,
+        #[payment] payment: BigUint,
+        #[payment_token] token: TokenIdentifier,
+    ) -> SCResult<()> {
+        require!(token == self.link_token().get(), "Wrong token type");
+        let mut recorded_funds = self.recorded_funds().get_mut();
+        recorded_funds.available += payment;
+        Ok(())
+    }
+
+    #[endpoint]
     fn submit(&self, round_id: u64, submission: BigUint) -> SCResult<()> {
         sc_try!(self.validate_oracle_round(&self.get_caller(), &round_id));
         require!(
@@ -138,7 +138,6 @@ pub trait Aggregator {
         max_submissions: u64,
         restart_delay: u64,
     ) -> SCResult<()> {
-        only_owner!(self, "Only owner may call this function!");
         for oracle in removed.iter() {
             self.oracles().remove(oracle);
         }
@@ -152,7 +151,7 @@ pub trait Aggregator {
             sc_try!(self.add_oracle(added_oracle, added_admin));
         }
 
-        sc_try!(self.update_future_rounds(
+        sc_try!(self.update_future_rounds_internal(
             self.payment_amount().get(),
             min_submissions,
             max_submissions,
@@ -162,6 +161,7 @@ pub trait Aggregator {
         Ok(())
     }
 
+    #[endpoint]
     fn update_future_rounds(
         &self,
         payment_amount: BigUint,
@@ -170,12 +170,25 @@ pub trait Aggregator {
         restart_delay: u64,
         timeout: u64,
     ) -> SCResult<()> {
-        let oracle_num = self.oracle_count(); // Save on storage reads
+        only_owner!(self, "Only owner may call this function!");
+        self.update_future_rounds_internal(
+            payment_amount,
+            min_submissions,
+            max_submissions,
+            restart_delay,
+            timeout,
+        )
+    }
 
-        // TODO: only_owner! fails when called from the constructor
-        if oracle_num > 0 {
-            only_owner!(self, "Only owner may call this function!");
-        }
+    fn update_future_rounds_internal(
+        &self,
+        payment_amount: BigUint,
+        min_submissions: u64,
+        max_submissions: u64,
+        restart_delay: u64,
+        timeout: u64,
+    ) -> SCResult<()> {
+        let oracle_num = self.oracle_count();
         require!(
             max_submissions >= min_submissions,
             "max must equal/exceed min"
@@ -240,16 +253,17 @@ pub trait Aggregator {
 
     #[view]
     fn withdrawable_payment(&self, oracle: Address) -> SCResult<BigUint> {
-        Ok(sc_try!(self.get_oracle_status(&oracle)).withdrawable)
+        Ok(sc_try!(self.get_oracle_status_result(&oracle)).withdrawable)
     }
 
+    #[endpoint]
     fn withdraw_payment(
         &self,
         oracle: Address,
         recipient: Address,
         amount: BigUint,
     ) -> SCResult<()> {
-        let mut oracle_status = sc_try!(self.get_oracle_status(&oracle));
+        let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
         require!(
             oracle_status.admin == self.get_caller(),
             "only callable by admin"
@@ -270,6 +284,7 @@ pub trait Aggregator {
         Ok(())
     }
 
+    #[endpoint]
     fn withdraw_funds(&self, recipient: Address, amount: BigUint) -> SCResult<()> {
         only_owner!(self, "Only owner may call this function!");
         let recorded_funds = self.recorded_funds().get();
@@ -286,12 +301,12 @@ pub trait Aggregator {
 
     #[view]
     fn get_admin(&self, oracle: Address) -> SCResult<Address> {
-        Ok(sc_try!(self.get_oracle_status(&oracle)).admin)
+        Ok(sc_try!(self.get_oracle_status_result(&oracle)).admin)
     }
 
     #[endpoint]
     fn transfer_admin(&self, oracle: Address, new_admin: Address) -> SCResult<()> {
-        let mut oracle_status = sc_try!(self.get_oracle_status(&oracle));
+        let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
         require!(
             oracle_status.admin == self.get_caller(),
             "only callable by admin"
@@ -303,7 +318,7 @@ pub trait Aggregator {
 
     #[endpoint]
     fn accept_admin(&self, oracle: Address) -> SCResult<()> {
-        let mut oracle_status = sc_try!(self.get_oracle_status(&oracle));
+        let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
         let caller = self.get_caller();
         require!(
             oracle_status.pending_admin == Some(caller.clone()),
@@ -337,6 +352,7 @@ pub trait Aggregator {
         Ok(new_round_id)
     }
 
+    #[endpoint]
     fn set_requester_permissions(
         &self,
         requester: Address,
@@ -372,7 +388,7 @@ pub trait Aggregator {
             sc_try!(self.eligible_for_specific_round(&oracle, &queried_round_id));
         let round = sc_try!(self.get_round(&queried_round_id));
         let details = sc_try!(self.get_round_details(&queried_round_id));
-        let oracle_status = sc_try!(self.get_oracle_status(&oracle));
+        let oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
         let recorded_funds = self.recorded_funds().get();
         Ok(OracleRoundState {
             eligible_to_submit,
@@ -391,34 +407,40 @@ pub trait Aggregator {
     }
 
     fn initialize_new_round(&self, round_id: &u64) -> SCResult<()> {
-        sc_try!(self.update_timed_out_round_info(round_id - 1));
+        if let Some(last_round) = round_id.checked_sub(1) {
+            sc_try!(self.update_timed_out_round_info(last_round));
+        }
 
         self.reporting_round_id().set(round_id.clone());
-        let next_details = RoundDetails {
-            submissions: Vec::new(),
-            max_submissions: self.max_submission_count().get(),
-            min_submissions: self.min_submission_count().get(),
-            timeout: self.timeout().get(),
-            payment_amount: self.payment_amount().get(),
-        };
-        self.details().insert(round_id.clone(), next_details);
         self.rounds().insert(
             round_id.clone(),
             Round {
                 round_id: round_id.clone(),
                 answer: BigUint::zero(),
                 started_at: self.get_block_timestamp(),
-                updated_at: 0,
+                updated_at: self.get_block_timestamp(),
                 answered_in_round: 0,
+            },
+        );
+        self.details().insert(
+            round_id.clone(),
+            RoundDetails {
+                submissions: Vec::new(),
+                max_submissions: self.max_submission_count().get(),
+                min_submissions: self.min_submission_count().get(),
+                timeout: self.timeout().get(),
+                payment_amount: self.payment_amount().get(),
             },
         );
         Ok(())
     }
 
     fn oracle_initialize_new_round(&self, round_id: u64) -> SCResult<()> {
-        sc_try!(self.new_round(&round_id));
+        if !self.new_round(&round_id) {
+            return Ok(());
+        }
         let oracle = self.get_caller();
-        let mut oracle_status = sc_try!(self.get_oracle_status(&oracle));
+        let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
         let restart_delay = self.restart_delay().get();
         if round_id <= oracle_status.last_started_round + restart_delay
             && oracle_status.last_started_round != 0
@@ -434,9 +456,13 @@ pub trait Aggregator {
     }
 
     fn requester_initialize_new_round(&self, round_id: u64) -> SCResult<()> {
-        sc_try!(self.new_round(&round_id));
         let requester_address = self.get_caller();
         let mut requester = sc_try!(self.get_requester(&requester_address));
+
+        if !self.new_round(&round_id) {
+            return Ok(());
+        }
+
         require!(
             round_id > requester.last_started_round + requester.delay
                 || requester.last_started_round == 0,
@@ -451,12 +477,18 @@ pub trait Aggregator {
     }
 
     fn update_timed_out_round_info(&self, round_id: u64) -> SCResult<()> {
-        sc_try!(self.new_round(&round_id));
+        if !sc_try!(self.timed_out(&round_id)) {
+            return Ok(());
+        }
         let mut round = sc_try!(self.get_round(&round_id));
-        let prev_id = round_id - 1;
-        let prev_round = sc_try!(self.get_round(&prev_id));
-        round.answer = prev_round.answer;
-        round.answered_in_round = prev_round.answered_in_round;
+        if let Some(prev_id) = round_id.checked_sub(1) {
+            let prev_round = sc_try!(self.get_round(&prev_id));
+            round.answer = prev_round.answer;
+            round.answered_in_round = prev_round.answered_in_round;
+        } else {
+            round.answer = BigUint::zero();
+            round.answered_in_round = 0;
+        }
         round.updated_at = self.get_block_timestamp();
         self.rounds().insert(round_id, round);
         self.details().remove(&round_id);
@@ -485,13 +517,13 @@ pub trait Aggregator {
         &self,
         oracle: &Address,
     ) -> SCResult<OracleRoundState<BigUint>> {
-        let oracle_status = sc_try!(self.get_oracle_status(oracle));
+        let oracle_status = sc_try!(self.get_oracle_status_result(oracle));
 
         let reporting_round_id = self.reporting_round_id().get();
         let should_supersede = oracle_status.last_reported_round == reporting_round_id
             || !sc_try!(self.accepting_submissions(&reporting_round_id));
         // Instead of nudging oracles to submit to the next round, the inclusion of
-        // the shouldSupersede bool in the if condition pushes them towards
+        // the should_supersede bool in the if condition pushes them towards
         // submitting in a currently open round.
         let mut eligible_to_submit: bool;
         let round: Round<BigUint>;
@@ -537,7 +569,7 @@ pub trait Aggregator {
             return Ok(None);
         }
 
-        let new_answer = median(details.submissions);
+        let new_answer = median::calculate(&details.submissions);
         let mut round = sc_try!(self.get_round(&round_id));
         round.answer = new_answer.clone();
         round.updated_at = self.get_block_timestamp();
@@ -551,7 +583,7 @@ pub trait Aggregator {
     fn pay_oracle(&self, round_id: u64) -> SCResult<()> {
         let round_details = sc_try!(self.get_round_details(&round_id));
         let oracle = self.get_caller();
-        let mut oracle_status = sc_try!(self.get_oracle_status(&oracle));
+        let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
 
         let payment = round_details.payment_amount;
         let mut recorded_funds = self.recorded_funds().get_mut();
@@ -571,7 +603,7 @@ pub trait Aggregator {
 
         let mut round_details = sc_try!(self.get_round_details(&round_id));
         let oracle = self.get_caller();
-        let mut oracle_status = sc_try!(self.get_oracle_status(&oracle));
+        let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
         round_details.submissions.push(submission.clone());
         oracle_status.last_reported_round = round_id;
         oracle_status.latest_submission = submission;
@@ -594,18 +626,22 @@ pub trait Aggregator {
         let started_at = round.started_at;
         let details = sc_try!(self.get_round_details(round_id));
         let round_timeout = details.timeout;
-        Ok(started_at > 0
-            && round_timeout > 0
-            && started_at + round_timeout < self.get_block_timestamp())
+        Ok(round_id == &0
+            || (started_at > 0
+                && round_timeout > 0
+                && started_at + round_timeout < self.get_block_timestamp()))
     }
 
-    fn get_starting_round(&self, oracle: &Address) -> SCResult<u64> {
+    fn get_starting_round(&self, oracle: &Address) -> u64 {
         let current_round = self.reporting_round_id().get();
-        let oracle_status = sc_try!(self.get_oracle_status(&oracle));
-        if current_round != 0 && current_round == oracle_status.ending_round {
-            return Ok(current_round);
+        if current_round != 0 {
+            if let Some(oracle_status) = self.get_oracle_status_option(&oracle) {
+                if current_round == oracle_status.ending_round {
+                    return current_round;
+                }
+            }
         }
-        Ok(current_round + 1)
+        current_round + 1
     }
 
     fn previous_and_current_unanswered(&self, round_id: u64, rr_id: u64) -> SCResult<bool> {
@@ -625,7 +661,7 @@ pub trait Aggregator {
             oracle.clone(),
             OracleStatus {
                 withdrawable: BigUint::zero(),
-                starting_round: sc_try!(self.get_starting_round(oracle)),
+                starting_round: self.get_starting_round(oracle),
                 ending_round: ROUND_MAX,
                 last_reported_round: 0,
                 last_started_round: 0,
@@ -638,8 +674,8 @@ pub trait Aggregator {
     }
 
     fn validate_oracle_round(&self, oracle: &Address, round_id: &u64) -> SCResult<()> {
-        let oracle_status = sc_try!(self.get_oracle_status(&oracle));
-        let rr_id = self.reporting_round_id().get();
+        let oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
+        let reporting_round_id = self.reporting_round_id().get();
 
         require!(oracle_status.starting_round != 0, "not enabled oracle");
         require!(
@@ -655,9 +691,9 @@ pub trait Aggregator {
             "cannot report on previous rounds"
         );
         require!(
-            *round_id == rr_id
-                || *round_id == rr_id + 1
-                || sc_try!(self.previous_and_current_unanswered(*round_id, rr_id)),
+            *round_id == reporting_round_id
+                || *round_id == reporting_round_id + 1
+                || sc_try!(self.previous_and_current_unanswered(*round_id, reporting_round_id)),
             "invalid round to report"
         );
         require!(
@@ -683,20 +719,20 @@ pub trait Aggregator {
     }
 
     fn delayed(&self, oracle: &Address, round_id: &u64) -> SCResult<bool> {
-        let oracle_status = sc_try!(self.get_oracle_status(oracle));
+        let oracle_status = sc_try!(self.get_oracle_status_result(oracle));
         let last_started = oracle_status.last_started_round;
         Ok(*round_id > last_started + self.restart_delay().get() || last_started == 0)
     }
 
-    fn new_round(&self, round_id: &u64) -> SCResult<()> {
-        require!(
-            *round_id == self.reporting_round_id().get() + 1,
-            "the last round and the new round must be consecutive"
-        );
-        Ok(())
+    fn new_round(&self, round_id: &u64) -> bool {
+        *round_id == self.reporting_round_id().get() + 1
     }
 
-    fn get_oracle_status(&self, oracle: &Address) -> SCResult<OracleStatus<BigUint>> {
+    fn get_oracle_status_option(&self, oracle: &Address) -> Option<OracleStatus<BigUint>> {
+        self.oracles().get(oracle)
+    }
+
+    fn get_oracle_status_result(&self, oracle: &Address) -> SCResult<OracleStatus<BigUint>> {
         if let Some(oracle_status) = self.oracles().get(oracle) {
             return Ok(oracle_status);
         }
@@ -722,5 +758,10 @@ pub trait Aggregator {
             return Ok(requester);
         }
         sc_error!("No requester has the given address")
+    }
+
+    #[view]
+    fn get_oracles(&self) -> SetMapper<Self::Storage, Address> {
+        self.oracle_addresses()
     }
 }

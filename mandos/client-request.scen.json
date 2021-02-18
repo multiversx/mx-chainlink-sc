@@ -54,8 +54,8 @@
             "step": "scCall",
             "txId": "check-oracle-requests",
             "tx": {
-                "from": "address:oracle_owner",
-                "to": "address:oracle_smart_contract",
+                "from": "address:oracle1_owner",
+                "to": "address:oracle1_smart_contract",
                 "value": "0",
                 "function": "requests_as_vec",
                 "arguments": [],
@@ -76,7 +76,7 @@
             "txId": "oracle-fulfill-request",
             "tx": {
                 "from": "address:authorized_oracle_node",
-                "to": "address:oracle_smart_contract",
+                "to": "address:oracle1_smart_contract",
                 "value": "0",
                 "function": "fulfill_request",
                 "arguments": [
