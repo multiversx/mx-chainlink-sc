@@ -13,8 +13,8 @@ const ROUND_MAX: u64 = u64::MAX;
 
 #[elrond_wasm_derive::contract(AggregatorImpl)]
 pub trait Aggregator {
-    #[storage_mapper("link_token")]
-    fn link_token(&self) -> GetterSetterMapper<Self::Storage, TokenIdentifier>;
+    #[storage_mapper("token_id")]
+    fn token_id(&self) -> GetterSetterMapper<Self::Storage, TokenIdentifier>;
 
     // Round related params
     #[storage_mapper("payment_amount")]
@@ -71,7 +71,7 @@ pub trait Aggregator {
     #[init]
     fn init(
         &self,
-        link_token: TokenIdentifier,
+        token_id: TokenIdentifier,
         payment_amount: BigUint,
         timeout: u64,
         min_submission_value: BigUint,
@@ -79,7 +79,7 @@ pub trait Aggregator {
         decimals: u8,
         description: String,
     ) -> SCResult<()> {
-        self.link_token().set(link_token);
+        self.token_id().set(token_id);
         self.recorded_funds().set(Funds {
             available: BigUint::zero(),
             allocated: BigUint::zero(),
@@ -90,7 +90,6 @@ pub trait Aggregator {
         self.max_submission_value().set(max_submission_value);
         self.decimals().set(decimals);
         self.description().set(description);
-        self.reporting_round_id().set(0);
         sc_try!(self.initialize_new_round(&0));
         Ok(())
     }
@@ -102,7 +101,7 @@ pub trait Aggregator {
         #[payment] payment: BigUint,
         #[payment_token] token: TokenIdentifier,
     ) -> SCResult<()> {
-        require!(token == self.link_token().get(), "Wrong token type");
+        require!(token == self.token_id().get(), "Wrong token type");
         let mut recorded_funds = self.recorded_funds().get_mut();
         recorded_funds.available += payment;
         Ok(())
@@ -227,12 +226,6 @@ pub trait Aggregator {
         self.recorded_funds().get().available
     }
 
-    fn update_available_funds(&self) {
-        let mut recorded_funds = self.recorded_funds().get_mut();
-        // TODO: use get balance for given token instead of get_sc_balance
-        recorded_funds.available = self.get_sc_balance() - recorded_funds.allocated.clone();
-    }
-
     #[view]
     fn oracle_count(&self) -> u64 {
         self.oracle_addresses().len() as u64
@@ -280,7 +273,7 @@ pub trait Aggregator {
         recorded_funds.allocated -= &amount;
 
         self.send()
-            .direct(&recipient, &self.link_token().get(), &amount, b"");
+            .direct(&recipient, &self.token_id().get(), &amount, b"");
         Ok(())
     }
 
@@ -293,9 +286,10 @@ pub trait Aggregator {
                 >= amount,
             "insufficient reserve funds"
         );
+        let mut recorded_funds = self.recorded_funds().get_mut();
+        recorded_funds.available -= &amount;
         self.send()
-            .direct(&recipient, &self.link_token().get(), &amount, b"");
-        self.update_available_funds();
+            .direct(&recipient, &self.token_id().get(), &amount, b"");
         Ok(())
     }
 
