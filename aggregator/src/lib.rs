@@ -12,7 +12,7 @@ const RESERVE_ROUNDS: u64 = 2;
 const ROUND_MAX: u64 = u64::MAX;
 
 #[elrond_wasm_derive::contract(AggregatorImpl)]
-pub trait Aggregator {
+pub trait Aggregator<BigUint: BigUintApi> {
     #[storage_mapper("token_id")]
     fn token_id(&self) -> GetterSetterMapper<Self::Storage, TokenIdentifier>;
 

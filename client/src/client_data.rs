@@ -1,9 +1,9 @@
-use elrond_wasm::{BoxedBytes};
+use elrond_wasm::types::BoxedBytes;
 
-derive_imports!();
+elrond_wasm::derive_imports!();
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct ClientData {
-	pub nonce : u64,
-    pub answer : BoxedBytes,
+    pub nonce: u64,
+    pub answer: BoxedBytes,
 }

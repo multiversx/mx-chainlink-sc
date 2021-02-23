@@ -1,6 +1,6 @@
-use elrond_wasm::{Address, BoxedBytes};
+use elrond_wasm::types::{Address, BoxedBytes};
 
-derive_imports!();
+elrond_wasm::derive_imports!();
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct OracleRequest {

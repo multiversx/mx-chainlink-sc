@@ -2,6 +2,13 @@ elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
+pub struct Info {
+    pub decimals: u8,
+    pub description: BoxedBytes,
+    pub version: u8,
+}
+
+#[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct Round<BigUint: BigUintApi> {
     pub round_id: u64,
     pub answer: BigUint,

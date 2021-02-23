@@ -1,16 +1,15 @@
 #![no_std]
 
 mod oracle_request;
-use elrond_wasm::{derive_imports, MultiResultVec};
+use elrond_wasm::types::MultiResultVec;
 use oracle_request::{OracleRequest, RequestView};
 
-imports!();
+elrond_wasm::imports!();
+elrond_wasm::derive_imports!();
 
-derive_imports!();
-
-#[elrond_wasm_derive::callable(ClientInterface)]
-pub trait ClientInterface {
-    fn reply(&self, nonce: u64, answer: BoxedBytes) -> SCResult<()>;
+#[elrond_wasm_derive::callable(ClientInterfaceProxy)]
+pub trait ClientInterface<BigUint: BigIntApi> {
+    fn reply(&self, nonce: u64, answer: BoxedBytes) -> ContractCall<BigUint>;
 }
 
 #[elrond_wasm_derive::contract(OracleImpl)]
@@ -86,7 +85,12 @@ pub trait Oracle {
 
     /// Note that the request_id here is String instead of Vec<u8> as might be expected from the Solidity contract
     #[endpoint]
-    fn fulfill_request(&self, address: Address, nonce: u64, data: BoxedBytes) -> SCResult<()> {
+    fn fulfill_request(
+        &self,
+        address: Address,
+        nonce: u64,
+        data: BoxedBytes,
+    ) -> SCResult<AsyncCall<BigUint>> {
         sc_try!(self.only_authorized_node());
 
         // Get the request
@@ -108,9 +112,8 @@ pub trait Oracle {
 
         address_requests.remove(&nonce);
 
-        let client = contract_proxy!(self, &request.callback_address, ClientInterface);
-        client.reply(nonce, data);
-        Ok(())
+        let client = contract_call!(self, request.callback_address, ClientInterfaceProxy);
+        Ok(client.reply(nonce, data).async_call())
     }
 
     #[endpoint]
