@@ -5,6 +5,12 @@ use elrond_wasm::HexCallDataSerializer;
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
+extern crate aggregator;
+use aggregator::*;
+
+extern crate alloc;
+use alloc::format;
+
 // erd1qqqqqqqqqqqqqqqpqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqzllls8a5w6u
 const ESDT_SYSTEM_SC_ADDRESS_ARRAY: [u8; 32] = [
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -28,7 +34,9 @@ pub enum EsdtOperation<BigUint: BigUintApi> {
 #[elrond_wasm_derive::contract(EgldEsdtExchangeImpl)]
 pub trait EgldEsdtExchange {
     #[init]
-    fn init(&self) {}
+    fn init(&self, aggregator: Address) {
+        self.aggregator_address().set(aggregator);
+    }
 
     // endpoints - owner-only
 
@@ -79,39 +87,84 @@ pub trait EgldEsdtExchange {
     // endpoints
 
     #[payable("EGLD")]
-    #[endpoint(wrapEgld)]
-    fn sell_egld(&self, #[payment] payment: BigUint) -> SCResult<()> {
+    #[endpoint]
+    fn sell_egld(&self, #[payment] payment: BigUint) -> SCResult<AsyncCall<BigUint>> {
         require!(payment > 0, "Payment must be more than 0");
         require!(
             !self.is_empty_wrapped_egld_token_identifier(),
             "ESDT was not issued yet"
         );
 
-        let wrapped_egld_left = self.get_wrapped_egld_remaining();
-        require!(
-            wrapped_egld_left > payment,
-            "Contract does not have enough ESDT. Please try again once more is minted."
-        );
+        Ok(contract_call!(
+            self,
+            self.aggregator_address().get(),
+            AggregatorInterfaceProxy
+        )
+        .latest_round_data()
+        .async_call()
+        .with_callback(self.callbacks().sell_rate_received(payment)))
+    }
 
-        self.substract_total_wrapped_egld(&payment);
+    fn try_convert_sell(
+        &self,
+        result: AsyncCallResult<aggregator::Round<BigUint>>,
+        payment: &BigUint,
+    ) -> SCResult<BigUint> {
+        match result {
+            AsyncCallResult::Ok(round) => {
+                let converted_payment =
+                    payment * &round.answer / BigUint::from(10u64.pow(round.decimals as u32));
 
-        self.send().direct_esdt(
-            &self.get_caller(),
-            self.get_wrapped_egld_token_identifier().as_slice(),
-            &payment,
-            b"wrapping",
-        );
+                let wrapped_egld_left = self.get_wrapped_egld_remaining();
+                require!(
+                    wrapped_egld_left > converted_payment,
+                    "Contract does not have enough ESDT. Please try again once more is minted."
+                );
 
-        Ok(())
+                self.substract_total_wrapped_egld(&payment);
+
+                Ok(converted_payment)
+            }
+            AsyncCallResult::Err(error) => {
+                let error_message = format!(
+                    "error when getting the price feed from the aggregator: {:?}",
+                    error.err_msg.as_ref()
+                );
+                sc_error!(error_message)
+            }
+        }
+    }
+
+    #[callback]
+    fn sell_rate_received(
+        &self,
+        #[call_result] result: AsyncCallResult<aggregator::Round<BigUint>>,
+        payment: BigUint,
+    ) {
+        match self.try_convert_sell(result, &payment) {
+            Ok(converted_payment) => {
+                self.send().direct_esdt(
+                    &self.get_caller(),
+                    self.get_wrapped_egld_token_identifier().as_slice(),
+                    &converted_payment,
+                    b"wrapping",
+                );
+            }
+            Err(error) => {
+                let message = format!("refund ({:?})", error.as_bytes());
+                self.send()
+                    .direct_egld(&self.get_caller(), &payment, message.as_bytes());
+            }
+        }
     }
 
     #[payable("*")]
-    #[endpoint(unwrapEgld)]
+    #[endpoint]
     fn buy_egld(
         &self,
         #[payment] wrapped_egld_payment: BigUint,
         #[payment_token] token_identifier: TokenIdentifier,
-    ) -> SCResult<()> {
+    ) -> SCResult<AsyncCall<BigUint>> {
         require!(
             !self.is_empty_wrapped_egld_token_identifier(),
             "Wrapped eGLD was not issued yet"
@@ -126,19 +179,71 @@ pub trait EgldEsdtExchange {
         );
 
         require!(wrapped_egld_payment > 0, "Must pay more than 0 tokens!");
-        // this should never happen, but we'll check anyway
-        require!(
-            wrapped_egld_payment <= self.get_sc_balance(),
-            "Contract does not have enough funds"
-        );
 
-        self.add_total_wrapped_egld(&wrapped_egld_payment);
+        Ok(contract_call!(
+            self,
+            self.aggregator_address().get(),
+            AggregatorInterfaceProxy
+        )
+        .latest_round_data()
+        .async_call()
+        .with_callback(
+            self.callbacks()
+                .buy_rate_received(wrapped_egld_payment, token_identifier),
+        ))
+    }
 
-        // 1 wrapped eGLD = 1 eGLD, so we pay back the same amount
-        self.send()
-            .direct_egld(&self.get_caller(), &wrapped_egld_payment, b"unwrapping");
+    fn try_convert_buy(
+        &self,
+        result: AsyncCallResult<aggregator::Round<BigUint>>,
+        payment: &BigUint,
+    ) -> SCResult<BigUint> {
+        match result {
+            AsyncCallResult::Ok(round) => {
+                let converted_payment =
+                    payment * &BigUint::from(10u64.pow(round.decimals as u32)) / round.answer;
 
-        Ok(())
+                require!(
+                    converted_payment <= self.get_sc_balance(),
+                    "Contract does not have enough funds"
+                );
+
+                self.add_total_wrapped_egld(&converted_payment);
+
+                Ok(converted_payment)
+            }
+            AsyncCallResult::Err(error) => {
+                let error_message = format!(
+                    "error when getting the price feed from the aggregator: {:?}",
+                    error.err_msg.as_ref()
+                );
+                sc_error!(error_message)
+            }
+        }
+    }
+
+    #[callback]
+    fn buy_rate_received(
+        &self,
+        #[call_result] result: AsyncCallResult<aggregator::Round<BigUint>>,
+        token_payment: BigUint,
+        token_identifier: TokenIdentifier,
+    ) {
+        match self.try_convert_buy(result, &token_payment) {
+            Ok(converted_payment) => {
+                self.send()
+                    .direct_egld(&self.get_caller(), &converted_payment, b"unwrapping");
+            }
+            Err(error) => {
+                let message = format!("refund ({:?})", error.as_bytes());
+                self.send().direct_esdt(
+                    &self.get_caller(),
+                    &token_identifier.as_slice(),
+                    &token_payment,
+                    message.as_bytes(),
+                );
+            }
+        }
     }
 
     #[view(getLockedEgldBalance)]
@@ -301,4 +406,7 @@ pub trait EgldEsdtExchange {
 
     #[storage_clear("temporaryStorageEsdtOperation")]
     fn clear_temporary_storage_esdt_operation(&self, original_tx_hash: &H256);
+
+    #[storage_mapper("aggregator_address")]
+    fn aggregator_address(&self) -> GetterSetterMapper<Self::Storage, Address>;
 }

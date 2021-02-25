@@ -115,7 +115,7 @@
                 "status": "0",
                 "message": "",
                 "out": [
-                    "u64:0|biguint:0|u64:400|u64:400|u64:0"
+                    "u64:0|biguint:0|u8:1|u32:10|str:price feed|u64:400|u64:400|u64:0"
                 ],
                 "gas": "*",
                 "refund": "*"
@@ -160,7 +160,7 @@
                 "status": "0",
                 "message": "",
                 "out": [
-                    "u64:1|biguint:62|u64:400|u64:400|u64:1"
+                    "u64:1|biguint:62|u8:1|u32:10|str:price feed|u64:400|u64:400|u64:1"
                 ],
                 "gas": "*",
                 "refund": "*"
@@ -312,8 +312,8 @@
                         "``rounds.value|u32:2": "1",
                         "``rounds.node_id|0": "1",
                         "``rounds.node_id|1": "2",
-                        "``rounds.mapped|0": "u64:0|biguint:0|u64:400|u64:400|u64:0",
-                        "``rounds.mapped|1": "u64:1|biguint:62|u64:400|u64:400|u64:1",
+                        "``rounds.mapped|0": "u64:0|biguint:0|u8:1|u32:10|str:price feed|u64:400|u64:400|u64:0",
+                        "``rounds.mapped|1": "u64:1|biguint:62|u8:1|u32:10|str:price feed|u64:400|u64:400|u64:1",
                         "``details.info": "u32:1|u32:1|u32:1|u32:1",
                         "``details.node_links|u32:1": "u32:0|u32:0",
                         "``details.value|u32:1": "1",

@@ -2,11 +2,13 @@
 #![feature(destructuring_assignment)]
 
 elrond_wasm::imports!();
-use elrond_wasm::String;
 mod aggregator_data;
-use aggregator_data::{Funds, OracleRoundState, OracleStatus, Requester, Round, RoundDetails};
 mod aggregator_interface;
 pub mod median;
+
+use aggregator_data::*;
+pub use aggregator_interface::*;
+use elrond_wasm::String;
 
 const RESERVE_ROUNDS: u64 = 2;
 const ROUND_MAX: u64 = u64::MAX;
@@ -411,6 +413,8 @@ pub trait Aggregator<BigUint: BigUintApi> {
             Round {
                 round_id: round_id.clone(),
                 answer: BigUint::zero(),
+                decimals: self.decimals().get(),
+                description: self.description().get(),
                 started_at: self.get_block_timestamp(),
                 updated_at: self.get_block_timestamp(),
                 answered_in_round: 0,
