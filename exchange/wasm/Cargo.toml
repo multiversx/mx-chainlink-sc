@@ -1,5 +1,5 @@
 [package]
-name = "oracle-wasm"
+name = "exchange-wasm"
 version = "0.0.0"
 authors = [ "Claudiu-Marcel Bruda <claudiu.bruda@elrond.com>",]
 edition = "2018"
@@ -15,7 +15,7 @@ lto = true
 debug = false
 panic = "abort"
 
-[dependencies.oracle]
+[dependencies.exchange]
 path = ".."
 features = ["wasm-output-mode"]
 default-features = false

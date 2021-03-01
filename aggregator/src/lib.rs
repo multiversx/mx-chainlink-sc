@@ -3,11 +3,11 @@
 
 elrond_wasm::imports!();
 mod aggregator_data;
-mod aggregator_interface;
+pub mod aggregator_interface;
 pub mod median;
 
-use aggregator_data::*;
-pub use aggregator_interface::*;
+use aggregator_data::{Funds, OracleRoundState, OracleStatus, Requester, RoundDetails};
+use aggregator_interface::Round;
 use elrond_wasm::String;
 
 const RESERVE_ROUNDS: u64 = 2;
