@@ -11,6 +11,10 @@ path = "src/lib.rs"
 [features]
 wasm-output-mode = [ "elrond-wasm-node",]
 
+[dependencies.aggregator]
+path = "../aggregator"
+default-features = false
+
 [dependencies.elrond-wasm]
 version = "0.12.0"
 path="../../elrond-wasm-rs/elrond-wasm"

@@ -1,7 +1,9 @@
 #![no_std]
 
-mod oracle_request;
+extern crate aggregator;
+use crate::aggregator::aggregator_interface::{AggregatorInterface, AggregatorInterfaceProxy};
 use elrond_wasm::types::MultiResultVec;
+mod oracle_request;
 use oracle_request::{OracleRequest, RequestView};
 
 elrond_wasm::imports!();
@@ -114,6 +116,19 @@ pub trait Oracle {
 
         let client = contract_call!(self, request.callback_address, ClientInterfaceProxy);
         Ok(client.reply(nonce, data).async_call())
+    }
+
+    #[endpoint]
+    fn submit(
+        &self,
+        aggregator: Address,
+        round_id: u64,
+        submission: BigUint,
+    ) -> SCResult<AsyncCall<BigUint>> {
+        only_owner!(self, "Only owner may call this function!");
+        Ok(contract_call!(self, aggregator, AggregatorInterfaceProxy)
+            .submit(round_id, submission)
+            .async_call())
     }
 
     #[endpoint]
