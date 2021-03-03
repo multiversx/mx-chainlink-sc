@@ -62,6 +62,7 @@ pub trait EgldEsdtExchange {
                 .latest_round_data()
                 .async_call()
                 .with_callback(self.callbacks().finalize_exchange(
+                    self.get_caller(),
                     payment,
                     source_token,
                     target_token,
@@ -146,14 +147,15 @@ pub trait EgldEsdtExchange {
     fn finalize_exchange(
         &self,
         #[call_result] result: AsyncCallResult<Round<BigUint>>,
+        caller: Address,
         payment: BigUint,
         source_token: TokenIdentifier,
         target_token: TokenIdentifier,
     ) {
         match self.try_convert(result, &payment, &source_token, &target_token) {
             Ok(converted_payment) => {
-                self.send().direct(
-                    &self.get_caller(),
+                self.send().direct_via_async_call(
+                    &caller,
                     &target_token,
                     &converted_payment,
                     b"exchange",
@@ -161,8 +163,8 @@ pub trait EgldEsdtExchange {
             }
             Err(error) => {
                 let message = format!("refund ({:?})", error.as_bytes());
-                self.send().direct(
-                    &self.get_caller(),
+                self.send().direct_via_async_call(
+                    &caller,
                     &source_token,
                     &payment,
                     message.as_bytes(),
