@@ -233,7 +233,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         self.oracle_addresses().len() as u64
     }
 
-    #[view]
+    #[endpoint]
     fn get_round_data(&self, round_id: u64) -> SCResult<Round<BigUint>> {
         if let Some(round) = self.rounds().get(&round_id) {
             return Ok(round);
@@ -241,7 +241,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         sc_error!("No data present")
     }
 
-    #[view]
+    #[endpoint]
     fn latest_round_data(&self) -> SCResult<Round<BigUint>> {
         self.get_round_data(self.latest_round_id().get())
     }

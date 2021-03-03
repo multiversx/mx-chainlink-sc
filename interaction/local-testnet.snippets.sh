@@ -137,6 +137,11 @@ number_to_hex() {
     printf "%0${PADDED_LENGTH}x" $NUMBER
 }
 
+address_arg() {
+    local ADDRESS=$1
+    echo "0x$(bech_to_hex $ADDRESS)"
+}
+
 number_arg() {
     local NUMBER=$1
     echo "0x$(number_to_hex $NUMBER)"
@@ -178,7 +183,7 @@ send_esdt() {
     local TOKEN_ID_HEX=$(ascii_to_hex $TOKEN_ID)
     local AMOUNT_HEX=$(number_to_hex $AMOUNT)
     (set -x; erdpy --verbose tx new --recall-nonce --pem=${SOURCE_WALLET} --receiver $(address_of $DESTINATION) \
-        --gas-limit=250000 --data "ESDTTransfer@$TOKEN_ID_HEX@$AMOUNT_HEX" --send)
+        --gas-limit=400000 --data "ESDTTransfer@$TOKEN_ID_HEX@$AMOUNT_HEX" --send)
 }
 
 send_esdt_with_call() {
@@ -238,7 +243,7 @@ step_3_deploy_sc() {
         $(number_arg $MIN_SUBMISSION_VALUE) $(number_arg $MAX_SUBMISSION_VALUE) $(number_arg $DECIMALS) $(ascii_arg $DESCRIPTION)
 
     # Exchange: exchange-eve
-    deploy_contract exchange eve
+    deploy_contract exchange eve --arguments $(address_arg ${AGGREGATOR_ALICE_ADDRESS})
 }
 
 step_4_prepare_aggregator() {
@@ -270,7 +275,7 @@ step_5_prepare_exchange() {
     
     sleep 6
 
-    send_esdt_with_call eve ${EXCHANGE_EVE_ADDRESS} $TOKEN_A $SOME_TOKENS "$(ascii_to_hex deposit)"
+    send_esdt_with_call eve ${EXCHANGE_EVE_ADDRESS} $TOKEN_B $SOME_TOKENS "$(ascii_to_hex deposit)"
 }
 
 step_6_send_funds_to_other_users() {
@@ -286,7 +291,8 @@ oracle_submit() {
     local ROUND=$2
     local SUBMISSION=$3
 
-    call_sc oracle $OWNER $OWNER --function submit --arguments ${AGGREGATOR_ALICE_ADDRESS} $ROUND $SUBMISSION
+    call_sc oracle $OWNER $OWNER --function submit \
+        --arguments $(address_arg ${AGGREGATOR_ALICE_ADDRESS}) $(number_arg $ROUND) $(number_arg $SUBMISSION)
 }
 
 step_7_send_round_1() {
@@ -309,12 +315,14 @@ step_8_exchange_tokens() {
     exchange_tokens heidi $TOKEN_A 1000 $TOKEN_B
     # heidi should now have 1200 of token B
 
+    sleep 6
+
     exchange_tokens ivan $TOKEN_B 1000 $TOKEN_A
     # ivan should now have 833 of token A
 }
 
 step_9_send_round_2() {
-    oracle_submit frank 1 1295
-    oracle_submit bob 1 1300
-    oracle_submit dan 1 1305
+    oracle_submit frank 2 1295
+    oracle_submit bob 2 1300
+    oracle_submit dan 2 1305
 }
