@@ -64,6 +64,9 @@ pub trait Aggregator<BigUint: BigUintApi> {
     #[storage_mapper("recorded_funds")]
     fn recorded_funds(&self) -> SingleValueMapper<Self::Storage, Funds<BigUint>>;
 
+    #[storage_mapper("deposits")]
+    fn deposits(&self) -> MapMapper<Self::Storage, Address, BigUint>;
+
     #[storage_mapper("decimals")]
     fn decimals(&self) -> SingleValueMapper<Self::Storage, u8>;
 
@@ -104,8 +107,23 @@ pub trait Aggregator<BigUint: BigUintApi> {
         #[payment_token] token: TokenIdentifier,
     ) -> SCResult<()> {
         require!(token == self.token_id().get(), "Wrong token type");
-        self.recorded_funds().update(|recorded_funds| recorded_funds.available += payment);
+        self.recorded_funds().update(|recorded_funds| recorded_funds.available += &payment);
+        let caller = &self.get_caller();
+        let deposit = self.get_deposit(caller) + payment;
+        self.set_deposit(caller, &deposit);
         Ok(())
+    }
+
+    fn get_deposit(&self, address : &Address) -> BigUint {
+        self.deposits().get(address).unwrap_or_else(|| 0u32.into())
+    }
+
+    fn set_deposit(&self, address : &Address, amount : &BigUint) {
+        if amount == &BigUint::zero() {
+            self.deposits().remove(address);
+        } else {
+            self.deposits().insert(address.clone(), amount.clone());
+        }
     }
 
     #[endpoint]
@@ -277,18 +295,27 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(())
     }
 
+    #[view]
+    fn withdrawable_added_funds(&self) -> BigUint {
+        self.get_deposit(&self.get_caller())
+    }
+
     #[endpoint]
-    fn withdraw_funds(&self, recipient: Address, amount: BigUint) -> SCResult<()> {
-        only_owner!(self, "Only owner may call this function!");
+    fn withdraw_funds(&self, amount: BigUint) -> SCResult<()> {
         let recorded_funds = self.recorded_funds().get();
+        let caller = &self.get_caller();
+        let deposit = self.get_deposit(caller);
+        require!(amount <= deposit, "Insufficient funds to withdraw");
         require!(
             recorded_funds.available - self.required_reserve(&self.payment_amount().get())
                 >= amount,
             "insufficient reserve funds"
         );
         self.recorded_funds().update(|recorded_funds| recorded_funds.available -= &amount);
+        let remaining = &deposit - &amount;
+        self.set_deposit(caller, &remaining);
         self.send()
-            .direct(&recipient, &self.token_id().get(), &amount, b"");
+            .direct(caller, &self.token_id().get(), &amount, b"withdraw");
         Ok(())
     }
 
@@ -575,6 +602,26 @@ pub trait Aggregator<BigUint: BigUintApi> {
         return Ok(Some(new_answer));
     }
 
+    fn subtract_amount_from_deposits(&self, amount : &BigUint) {
+        let mut remaining = amount.clone();
+        let mut final_amounts : Vec<(Address, BigUint)> = Vec::new();
+        for (account, deposit) in self.deposits().iter() {
+            if remaining == BigUint::zero() {
+                break;
+            }
+            if deposit <= remaining {
+                final_amounts.push((account, BigUint::zero()));
+                remaining -= deposit;
+            } else {
+                final_amounts.push((account, deposit - remaining));
+                remaining = BigUint::zero();
+            }
+        }
+        for (account, final_amount) in final_amounts.iter() {
+            self.set_deposit(account, final_amount);
+        }
+    }
+
     fn pay_oracle(&self, round_id: u64) -> SCResult<()> {
         let round_details = sc_try!(self.get_round_details(&round_id));
         let oracle = self.get_caller();
@@ -585,6 +632,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
             recorded_funds.available -= &payment;
             recorded_funds.allocated += &payment;
         });
+        self.subtract_amount_from_deposits(&payment);
 
         oracle_status.withdrawable += &payment;
         self.oracles().insert(oracle, oracle_status);
