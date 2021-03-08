@@ -54,7 +54,7 @@ fn format_fixed_precision<BigUint: BigUintApi>(number: &BigUint, decimals: usize
 pub trait EgldEsdtExchange {
     #[init]
     fn init(&self, aggregator: Address) {
-        self.aggregator().set(aggregator);
+        self.aggregator().set(&aggregator);
     }
 
     #[payable("*")]
@@ -303,7 +303,7 @@ pub trait EgldEsdtExchange {
     }
 
     #[storage_mapper("aggregator")]
-    fn aggregator(&self) -> GetterSetterMapper<Self::Storage, Address>;
+    fn aggregator(&self) -> SingleValueMapper<Self::Storage, Address>;
 
     #[storage_mapper("balance")]
     fn balance(&self) -> MapMapper<Self::Storage, TokenIdentifier, BigUint>;
