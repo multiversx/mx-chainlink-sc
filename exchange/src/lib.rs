@@ -112,13 +112,13 @@ pub trait EgldEsdtExchange {
             tokens.len() == 2,
             "Invalid aggregator description format (expected 2 tokens)"
         );
-        if tokens[0].as_bytes() == source_token.as_slice()
-            && tokens[1].as_bytes() == target_token.as_slice()
+        if tokens[0].as_bytes() == source_token.as_esdt_identifier()
+            && tokens[1].as_bytes() == target_token.as_esdt_identifier()
         {
             return Ok(false);
         }
-        if tokens[0].as_bytes() == target_token.as_slice()
-            && tokens[1].as_bytes() == source_token.as_slice()
+        if tokens[0].as_bytes() == target_token.as_esdt_identifier()
+            && tokens[1].as_bytes() == source_token.as_esdt_identifier()
         {
             return Ok(true);
         }

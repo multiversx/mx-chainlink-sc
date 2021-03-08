@@ -16,35 +16,35 @@ const ROUND_MAX: u64 = u64::MAX;
 #[elrond_wasm_derive::contract(AggregatorImpl)]
 pub trait Aggregator<BigUint: BigUintApi> {
     #[storage_mapper("token_id")]
-    fn token_id(&self) -> GetterSetterMapper<Self::Storage, TokenIdentifier>;
+    fn token_id(&self) -> SingleValueMapper<Self::Storage, TokenIdentifier>;
 
     // Round related params
     #[storage_mapper("payment_amount")]
-    fn payment_amount(&self) -> GetterSetterMapper<Self::Storage, BigUint>;
+    fn payment_amount(&self) -> SingleValueMapper<Self::Storage, BigUint>;
 
     #[storage_mapper("max_submission_count")]
-    fn max_submission_count(&self) -> GetterSetterMapper<Self::Storage, u64>;
+    fn max_submission_count(&self) -> SingleValueMapper<Self::Storage, u64>;
 
     #[storage_mapper("min_submission_count")]
-    fn min_submission_count(&self) -> GetterSetterMapper<Self::Storage, u64>;
+    fn min_submission_count(&self) -> SingleValueMapper<Self::Storage, u64>;
 
     #[storage_mapper("restart_delay")]
-    fn restart_delay(&self) -> GetterSetterMapper<Self::Storage, u64>;
+    fn restart_delay(&self) -> SingleValueMapper<Self::Storage, u64>;
 
     #[storage_mapper("timeout")]
-    fn timeout(&self) -> GetterSetterMapper<Self::Storage, u64>;
+    fn timeout(&self) -> SingleValueMapper<Self::Storage, u64>;
 
     #[storage_mapper("min_submission_value")]
-    fn min_submission_value(&self) -> GetterSetterMapper<Self::Storage, BigUint>;
+    fn min_submission_value(&self) -> SingleValueMapper<Self::Storage, BigUint>;
 
     #[storage_mapper("max_submission_value")]
-    fn max_submission_value(&self) -> GetterSetterMapper<Self::Storage, BigUint>;
+    fn max_submission_value(&self) -> SingleValueMapper<Self::Storage, BigUint>;
 
     #[storage_mapper("reporting_round_id")]
-    fn reporting_round_id(&self) -> GetterSetterMapper<Self::Storage, u64>;
+    fn reporting_round_id(&self) -> SingleValueMapper<Self::Storage, u64>;
 
     #[storage_mapper("latest_round_id")]
-    fn latest_round_id(&self) -> GetterSetterMapper<Self::Storage, u64>;
+    fn latest_round_id(&self) -> SingleValueMapper<Self::Storage, u64>;
 
     #[storage_mapper("oracles")]
     fn oracle_addresses(&self) -> SetMapper<Self::Storage, Address>;
@@ -62,13 +62,13 @@ pub trait Aggregator<BigUint: BigUintApi> {
     fn requesters(&self) -> MapMapper<Self::Storage, Address, Requester>;
 
     #[storage_mapper("recorded_funds")]
-    fn recorded_funds(&self) -> GetterSetterMapper<Self::Storage, Funds<BigUint>>;
+    fn recorded_funds(&self) -> SingleValueMapper<Self::Storage, Funds<BigUint>>;
 
     #[storage_mapper("decimals")]
-    fn decimals(&self) -> GetterSetterMapper<Self::Storage, u8>;
+    fn decimals(&self) -> SingleValueMapper<Self::Storage, u8>;
 
     #[storage_mapper("description")]
-    fn description(&self) -> GetterSetterMapper<Self::Storage, String>;
+    fn description(&self) -> SingleValueMapper<Self::Storage, String>;
 
     #[init]
     fn init(
@@ -81,17 +81,17 @@ pub trait Aggregator<BigUint: BigUintApi> {
         decimals: u8,
         description: String,
     ) -> SCResult<()> {
-        self.token_id().set(token_id);
-        self.recorded_funds().set(Funds {
+        self.token_id().set(&token_id);
+        self.recorded_funds().set(&Funds {
             available: BigUint::zero(),
             allocated: BigUint::zero(),
         });
 
         sc_try!(self.update_future_rounds_internal(payment_amount, 0, 0, 0, timeout));
-        self.min_submission_value().set(min_submission_value);
-        self.max_submission_value().set(max_submission_value);
-        self.decimals().set(decimals);
-        self.description().set(description);
+        self.min_submission_value().set(&min_submission_value);
+        self.max_submission_value().set(&max_submission_value);
+        self.decimals().set(&decimals);
+        self.description().set(&description);
         sc_try!(self.initialize_new_round(&0));
         Ok(())
     }
@@ -104,8 +104,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         #[payment_token] token: TokenIdentifier,
     ) -> SCResult<()> {
         require!(token == self.token_id().get(), "Wrong token type");
-        let mut recorded_funds = self.recorded_funds().get_mut();
-        recorded_funds.available += payment;
+        self.recorded_funds().update(|recorded_funds| recorded_funds.available += payment);
         Ok(())
     }
 
@@ -210,11 +209,11 @@ pub trait Aggregator<BigUint: BigUintApi> {
         if oracle_num > 0 {
             require!(min_submissions > 0, "min must be greater than 0");
         }
-        self.payment_amount().set(payment_amount);
-        self.min_submission_count().set(min_submissions);
-        self.max_submission_count().set(max_submissions);
-        self.restart_delay().set(restart_delay);
-        self.timeout().set(timeout);
+        self.payment_amount().set(&payment_amount);
+        self.min_submission_count().set(&min_submissions);
+        self.max_submission_count().set(&max_submissions);
+        self.restart_delay().set(&restart_delay);
+        self.timeout().set(&timeout);
         Ok(())
     }
 
@@ -269,10 +268,9 @@ pub trait Aggregator<BigUint: BigUintApi> {
             "insufficient withdrawable funds"
         );
 
-        let mut recorded_funds = self.recorded_funds().get_mut();
+        self.recorded_funds().update(|recorded_funds| recorded_funds.allocated -= &amount);
         oracle_status.withdrawable -= &amount;
         self.oracles().insert(oracle, oracle_status);
-        recorded_funds.allocated -= &amount;
 
         self.send()
             .direct(&recipient, &self.token_id().get(), &amount, b"");
@@ -288,8 +286,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
                 >= amount,
             "insufficient reserve funds"
         );
-        let mut recorded_funds = self.recorded_funds().get_mut();
-        recorded_funds.available -= &amount;
+        self.recorded_funds().update(|recorded_funds| recorded_funds.available -= &amount);
         self.send()
             .direct(&recipient, &self.token_id().get(), &amount, b"");
         Ok(())
@@ -407,7 +404,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
             sc_try!(self.update_timed_out_round_info(last_round));
         }
 
-        self.reporting_round_id().set(round_id.clone());
+        self.reporting_round_id().set(round_id);
         self.rounds().insert(
             round_id.clone(),
             Round {
@@ -573,7 +570,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         round.updated_at = self.get_block_timestamp();
         round.answered_in_round = round_id;
         self.rounds().insert(round_id, round);
-        self.latest_round_id().set(round_id);
+        self.latest_round_id().set(&round_id);
 
         return Ok(Some(new_answer));
     }
@@ -584,9 +581,10 @@ pub trait Aggregator<BigUint: BigUintApi> {
         let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
 
         let payment = round_details.payment_amount;
-        let mut recorded_funds = self.recorded_funds().get_mut();
-        recorded_funds.available -= &payment;
-        recorded_funds.allocated += &payment;
+        self.recorded_funds().update(|recorded_funds| {
+            recorded_funds.available -= &payment;
+            recorded_funds.allocated += &payment;
+        });
 
         oracle_status.withdrawable += &payment;
         self.oracles().insert(oracle, oracle_status);

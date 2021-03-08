@@ -25,7 +25,7 @@ pub trait Oracle {
     ) -> MapStorageMapper<Self::Storage, Address, MapMapper<Self::Storage, u64, OracleRequest>>;
 
     #[view]
-    fn requests_as_vec() -> MultiResultVec<RequestView> {
+    fn requests_as_vec(&self) -> MultiResultVec<RequestView> {
         let mut vec: Vec<RequestView> = Vec::new();
         for (address, request) in self.requests().iter() {
             for (nonce, oracle_request) in request.iter() {
