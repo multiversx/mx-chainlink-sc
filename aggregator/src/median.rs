@@ -1,6 +1,8 @@
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
+// comments seem Solidity-style. Update them to Rust-docs style.
+
 /**
 * @notice Returns the sorted middle, or the average of the two middle indexed items if the
 * array has an even number of elements.
@@ -9,6 +11,9 @@ elrond_wasm::derive_imports!();
 * the runtime is O(n^2).
 * @param list The list of elements to compare
 */
+
+// This function is not needed. Remove it and make calculate_inplace public.
+// If the caller wants to keep ownership of the list, they should use .clone() instead
 pub fn calculate<BigUint: BigUintApi>(list: &Vec<BigUint>) -> BigUint {
     calculate_inplace(list.clone())
 }
@@ -24,6 +29,7 @@ where
     assert!(!list.is_empty(), "list must not be empty");
     let len = list.len();
     let middle_index = len / 2;
+    // no need for "return" keyword here
     if len % 2 == 0 {
         let (median1, median2) =
             quickselect_two(&mut list, 0, len - 1, middle_index - 1, middle_index);
@@ -43,6 +49,8 @@ fn quickselect<BigUint: BigUintApi>(
     mut hi: usize,
     k: usize,
 ) -> BigUint {
+    // assert should be used for tests/debugging only
+    // have core::Result as return value instead and return Err if conditions are false
     assert!(lo <= k);
     assert!(k <= hi);
     while lo < hi {
@@ -71,6 +79,7 @@ fn quickselect_two<BigUint: BigUintApi>(
     k1: usize,
     k2: usize,
 ) -> (BigUint, BigUint) {
+    // same as above, no assert in production
     assert!(k1 < k2);
     assert!(lo <= k1 && k1 <= hi);
     assert!(lo <= k2 && k2 <= hi);
@@ -82,6 +91,7 @@ fn quickselect_two<BigUint: BigUintApi>(
         } else if pivot_idx < k1 {
             lo = pivot_idx + 1;
         } else {
+            // no assert
             assert!(k1 <= pivot_idx && pivot_idx < k2);
             let k1th = quickselect(list, lo, pivot_idx, k1);
             let k2th = quickselect(list, pivot_idx + 1, hi, k2);
@@ -106,6 +116,13 @@ fn partition<BigUint: BigUintApi>(list: &mut Vec<BigUint>, mut lo: usize, mut hi
     hi += 1;
     loop {
         loop {
+            // instead of underflowing and then overflowing again,
+            // please rework this so you do the addition after the if
+            // Instead of negating the condition and making it confusing, 
+            // Just use if list[lo] >= pivot
+            //
+            // Also, this is potentially dangerous. I see no checks for reaching the end of the list,
+            // What happens if the pivot is the maximum element?
             lo = lo.overflowing_add(1).0;
             if !(list[lo] < pivot) {
                 break;
@@ -113,6 +130,8 @@ fn partition<BigUint: BigUintApi>(list: &mut Vec<BigUint>, mut lo: usize, mut hi
         }
         loop {
             hi -= 1;
+            // don't negate, use list[hi] <= pivot
+            // Also, check if "hi" reached 0
             if !(list[hi] > pivot) {
                 break;
             }

@@ -16,6 +16,7 @@ pub trait OracleInterface {
     ) -> ContractCall<BigUint>;
 }
 
+// Optional: Use SingleValueMapper instead
 #[elrond_wasm_derive::contract(ClientImpl)]
 pub trait Client<BigUint: BigUintApi> {
     #[storage_get("oracle_address")]
@@ -24,6 +25,9 @@ pub trait Client<BigUint: BigUintApi> {
     #[storage_set("oracle_address")]
     fn set_oracle_address(&self, oracle_address: Address);
 
+    // Don't use Option, instead store only ClientData, and add an is_empty storage checker,
+    // (automatically added if you use SingleValueMapper)
+    // Then make a separate view function that returns it as Option<>
     #[view]
     #[storage_get("client_data")]
     fn get_client_data(&self) -> Option<ClientData>;
@@ -31,6 +35,7 @@ pub trait Client<BigUint: BigUintApi> {
     #[storage_set("client_data")]
     fn set_client_data(&self, user_data: Option<ClientData>);
 
+    // There is no need to return a SCResult here
     #[init]
     fn init(&self, oracle_address: Address) -> SCResult<()> {
         self.set_oracle_address(oracle_address);
@@ -41,6 +46,8 @@ pub trait Client<BigUint: BigUintApi> {
     fn send_request(&self) -> SCResult<AsyncCall<BigUint>> {
         only_owner!(self, "Caller must be owner");
         let callback_address = self.get_sc_address();
+        // There is no need to concat. You can simply use
+        // BoxedBytes::from(&b"reply"[..])
         let callback_method = BoxedBytes::from_concat(&[b"reply"]);
         let nonce = self.get_block_nonce();
         let data = BoxedBytes::empty();

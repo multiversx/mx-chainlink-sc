@@ -43,6 +43,8 @@ pub trait Oracle {
     #[storage_mapper("authorized_nodes")]
     fn authorized_nodes(&self) -> SetMapper<Self::Storage, Address>;
 
+    // There's no need to return anything. Replace with empty init function
+    // i.e. #[init] fn init(&self) {}
     #[init]
     fn init(&self) -> SCResult<()> {
         Ok(())
@@ -69,8 +71,22 @@ pub trait Oracle {
 
         let mut nonces = self.nonces();
         if let Some(last_nonce) = nonces.get(&caller) {
+            // nonces should be incremental, so I think here you should check (nonce == last_nonce + 1) instead
+            // If this is intentional, then the error message should be changed. If you use nonces 1, 2, 5, then you use nonce 3, 
+            // the error message is misleading, since nonce 3 was never actually used
             require!(last_nonce < nonce, "Invalid, already used nonce");
         }
+
+        /*
+        If nonces indeed are supposed to be incremental, rewrite like this:
+
+        if let Some(last_nonce) == nonces_get(&caller) {
+            require!(nonce == last_nonce + 1, "Invalid nonce");
+        }
+        else {
+            require!(nonce == 0, "Invalid nonce");
+        }
+        */
 
         // store request
         let new_request = OracleRequest {
@@ -134,6 +150,8 @@ pub trait Oracle {
     #[endpoint]
     fn add_authorization(&self, node: Address) -> SCResult<()> {
         only_owner!(self, "Caller must be owner");
+        // For consistency with the remove_authorisation endpoint, check if the value was actually removed,
+        // and return an "Authorisation was already granted" error message or something similar
         self.authorized_nodes().insert(node);
         Ok(())
     }

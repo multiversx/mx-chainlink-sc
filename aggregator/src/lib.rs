@@ -13,6 +13,8 @@ use elrond_wasm::String;
 const RESERVE_ROUNDS: u64 = 2;
 const ROUND_MAX: u64 = u64::MAX;
 
+// Please refrain from using SCResult where possible
+
 #[elrond_wasm_derive::contract(AggregatorImpl)]
 pub trait Aggregator<BigUint: BigUintApi> {
     #[storage_mapper("token_id")]
@@ -206,12 +208,15 @@ pub trait Aggregator<BigUint: BigUintApi> {
         restart_delay: u64,
         timeout: u64,
     ) -> SCResult<()> {
+        // rename to "oracle_count"
         let oracle_num = self.oracle_count();
         require!(
             max_submissions >= min_submissions,
             "max must equal/exceed min"
         );
+        // For clarity, rewrite condition as max_subbmissions <= oracle_num
         require!(oracle_num >= max_submissions, "max cannot exceed total");
+        // rewrite as oracle_num == 0 || restart_delay < oracle_num
         require!(
             oracle_num == 0 || oracle_num > restart_delay,
             "delay cannot exceed total"
@@ -250,14 +255,17 @@ pub trait Aggregator<BigUint: BigUintApi> {
         self.oracle_addresses().len() as u64
     }
 
+    // this seems like a view function. I suggest returning Option<> instead of SCResult
     #[endpoint]
     fn get_round_data(&self, round_id: u64) -> SCResult<Round<BigUint>> {
         if let Some(round) = self.rounds().get(&round_id) {
+            // no need for "return" statement
             return Ok(round);
         }
         sc_error!("No data present")
     }
 
+    // same as above
     #[endpoint]
     fn latest_round_data(&self) -> SCResult<Round<BigUint>> {
         self.get_round_data(self.latest_round_id().get())

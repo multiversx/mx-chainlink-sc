@@ -13,17 +13,30 @@ use crate::aggregator::aggregator_interface::{
 extern crate alloc;
 use alloc::format;
 
+// The following comment applies to this file in general.
+//
+// while I definitely understand the temptation to have nicely formatted messages,
+// the wasm bloat is insane. This is fine for debugging, but in my opinion,
+// this should never make it into the final product
+
 fn format_biguint<BigUint: BigUintApi>(number: &BigUint) -> String {
+    // "x" is not a good variable name. At the very least, rename to "nr"
     let mut x = number.clone();
+    // to prevent doing conversions over and over through .into()
+    // rename to radix_uint and have a radix_biguint = BigUint::from(10u32) variable as well
     let radix = 10u32;
     let mut result = Vec::new();
 
     loop {
+        // rename "m" to "remainder" or something similar
         let m = x.clone() % radix.into();
         x = x / radix.into();
 
         // will panic if you use a bad radix (< 2 or > 36).
         let digit = *m.to_bytes_be().get(0).unwrap_or(&0) as u32;
+        
+        // char is always 4 bytes, so this could be optimized to use (b'0' + digit) instead, which would give you an u8,
+        // which you could then use to create the String (String::from_ut8 iirc)
         result.push(char::from_digit(digit, radix).unwrap());
         if x == 0 {
             break;
@@ -33,6 +46,9 @@ fn format_biguint<BigUint: BigUintApi>(number: &BigUint) -> String {
 }
 
 fn token_to_string(token_identifier: &TokenIdentifier) -> String {
+    // There is no need to use _lossy version. Token identifier uses u8 slices. 
+    // All ASCII characters are valid UTF-8
+    // Invalid characters (> 127) would mean the token identifier itself is invalid
     String::from_utf8_lossy(token_identifier.as_name()).into()
 }
 
@@ -125,6 +141,7 @@ pub trait EgldEsdtExchange {
         sc_error!("Exchange between chosen token types not supported.")
     }
 
+    // Optional: rename "source_amount" to "amount"
     fn convert(
         &self,
         source_amount: &BigUint,
@@ -182,6 +199,10 @@ pub trait EgldEsdtExchange {
         }
     }
 
+    // SCResult should be used strictly for returning data to the caller.
+    // This function is used only in the callback, so
+    // I suggest using core::Result in this case
+    // Same with check_aggregator_tokens and get_converted_sum
     fn try_convert(
         &self,
         result: AsyncCallResult<Round<BigUint>>,
@@ -204,6 +225,8 @@ pub trait EgldEsdtExchange {
                     round.decimals as usize,
                     reverse_exchange,
                 ));
+
+                // use "match" instead of "if"
                 if let SCResult::Err(error) = self.decrease_balance(target_token, &converted_amount)
                 {
                     let error_message = String::from_utf8_lossy(error.as_bytes());
@@ -258,6 +281,8 @@ pub trait EgldEsdtExchange {
         self.balance().insert(token_identifier.clone(), balance);
     }
 
+    // For consistency with the increase_balance function, do all the checking in the caller
+    // and let this function simply update the storage value, then don't return anything
     fn decrease_balance(
         &self,
         token_identifier: &TokenIdentifier,

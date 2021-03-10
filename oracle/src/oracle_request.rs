@@ -4,7 +4,7 @@ elrond_wasm::derive_imports!();
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct OracleRequest {
-    pub caller_account: Address,
+    pub caller_account: Address, // Optional: Rename to "caller" instead of "caller_account"
     pub callback_address: Address,
     pub callback_method: BoxedBytes,
     pub data: BoxedBytes,
