@@ -13,30 +13,29 @@ use crate::aggregator::aggregator_interface::{
 extern crate alloc;
 use alloc::format;
 
-fn format_biguint<BigUint: BigUintApi>(number: &BigUint) -> String {
-    let mut x = number.clone();
-    let radix = 10u32;
+pub fn format_biguint<BigUint: BigUintApi>(number: &BigUint) -> String {
+    let mut nr = number.clone();
+    let radix = BigUint::from(10u32);
     let mut result = Vec::new();
 
     loop {
-        let m = x.clone() % radix.into();
-        x = x / radix.into();
+        let last_digit = nr.clone() % radix.clone();
+        nr = nr / radix.clone();
 
-        // will panic if you use a bad radix (< 2 or > 36).
-        let digit = *m.to_bytes_be().get(0).unwrap_or(&0) as u32;
-        result.push(char::from_digit(digit, radix).unwrap());
-        if x == 0 {
+        let digit = *last_digit.to_bytes_be().get(0).unwrap_or(&0) as u8;
+        result.push(char::from('0' as u8 + digit));
+        if nr == 0 {
             break;
         }
     }
     result.into_iter().rev().collect()
 }
 
-fn token_to_string(token_identifier: &TokenIdentifier) -> String {
-    String::from_utf8_lossy(token_identifier.as_name()).into()
+fn token_to_string(token_identifier: &TokenIdentifier) -> Result<String, String> {
+    String::from_utf8(token_identifier.as_name().into()).map_err(|_| "Invalid token name".into())
 }
 
-fn format_fixed_precision<BigUint: BigUintApi>(number: &BigUint, decimals: usize) -> String {
+pub fn format_fixed_precision<BigUint: BigUintApi>(number: &BigUint, decimals: usize) -> String {
     let padded_number = format!("{:0>width$}", format_biguint(number), width = decimals + 1);
     let digits_before_dot = padded_number.len() - decimals;
     let left = padded_number
@@ -106,47 +105,48 @@ pub trait EgldEsdtExchange {
         description: String,
         source_token: &TokenIdentifier,
         target_token: &TokenIdentifier,
-    ) -> SCResult<bool> {
+    ) -> Result<bool, String> {
         let tokens: Vec<&str> = description.split("/").collect();
-        require!(
-            tokens.len() == 2,
-            "Invalid aggregator description format (expected 2 tokens)"
-        );
+        if tokens.len() != 2 {
+            return Result::Err("Invalid aggregator description format (expected 2 tokens)".into());
+        }
         if tokens[0].as_bytes() == source_token.as_esdt_identifier()
             && tokens[1].as_bytes() == target_token.as_esdt_identifier()
         {
-            return Ok(false);
+            return Result::Ok(false);
         }
         if tokens[0].as_bytes() == target_token.as_esdt_identifier()
             && tokens[1].as_bytes() == source_token.as_esdt_identifier()
         {
-            return Ok(true);
+            return Result::Ok(true);
         }
-        sc_error!("Exchange between chosen token types not supported.")
+        Result::Err("Exchange between chosen token types not supported.".into())
     }
 
     fn convert(
         &self,
-        source_amount: &BigUint,
+        amount: &BigUint,
         source_token: &TokenIdentifier,
         target_token: &TokenIdentifier,
         multiplier: &BigUint,
         divisor: &BigUint,
         precision_factor: &BigUint,
         decimals: usize,
-    ) -> SCResult<(BigUint, String)> {
-        require!(divisor > &BigUint::from(0u32), "Convert - dividing by 0");
-        let converted_amount = source_amount * multiplier / divisor.clone();
+    ) -> Result<(BigUint, String), String> {
+        if divisor == &BigUint::zero() {
+            return Result::Err("Convert - dividing by 0".into());
+        }
+        let converted_amount = amount * multiplier / divisor.clone();
         let rate = multiplier * precision_factor / divisor.clone();
         let message = self.conversion_message(
-            source_amount,
+            amount,
             source_token,
             &rate,
             decimals,
             &converted_amount,
             target_token,
-        );
-        Ok((converted_amount, message))
+        )?;
+        Result::Ok((converted_amount, message))
     }
 
     fn get_converted_sum(
@@ -157,7 +157,7 @@ pub trait EgldEsdtExchange {
         exchange_rate: &BigUint,
         decimals: usize,
         reverse_exchange: bool,
-    ) -> SCResult<(BigUint, String)> {
+    ) -> Result<(BigUint, String), String> {
         let precision_factor = BigUint::from(10u64.pow(decimals as u32));
         if !reverse_exchange {
             self.convert(
@@ -188,36 +188,34 @@ pub trait EgldEsdtExchange {
         payment: &BigUint,
         source_token: &TokenIdentifier,
         target_token: &TokenIdentifier,
-    ) -> SCResult<(BigUint, String)> {
+    ) -> Result<(BigUint, String), String> {
         match result {
             AsyncCallResult::Ok(round) => {
-                let reverse_exchange = sc_try!(self.check_aggregator_tokens(
-                    round.description,
-                    source_token,
-                    target_token
-                ));
-                let (converted_amount, conversion_message) = sc_try!(self.get_converted_sum(
+                let reverse_exchange =
+                    self.check_aggregator_tokens(round.description, source_token, target_token)?;
+                let (converted_amount, conversion_message) = self.get_converted_sum(
                     payment,
                     source_token,
                     target_token,
                     &round.answer,
                     round.decimals as usize,
                     reverse_exchange,
-                ));
-                if let SCResult::Err(error) = self.decrease_balance(target_token, &converted_amount)
-                {
-                    let error_message = String::from_utf8_lossy(error.as_bytes());
-                    return sc_error!(format!("{} ({})", error_message, conversion_message));
+                )?;
+                match self.checked_decrease_balance(target_token, &converted_amount) {
+                    Result::Err(error) => {
+                        let error_message = String::from_utf8_lossy(error.as_bytes());
+                        Result::Err(format!("{} ({})", error_message, conversion_message))
+                    }
+                    Result::Ok(()) => Result::Ok((converted_amount, conversion_message)),
                 }
-                Ok((converted_amount, conversion_message))
             }
             AsyncCallResult::Err(error) => {
-                sc_try!(self.decrease_balance(source_token, &payment));
+                self.checked_decrease_balance(source_token, &payment)?;
                 let error_message = format!(
                     "Error when getting the price feed from the aggregator: {}",
                     String::from_utf8_lossy(error.err_msg.as_ref())
                 );
-                sc_error!(error_message)
+                Result::Err(error_message)
             }
         }
     }
@@ -232,7 +230,7 @@ pub trait EgldEsdtExchange {
         target_token: TokenIdentifier,
     ) {
         match self.try_convert(result, &payment, &source_token, &target_token) {
-            Ok((converted_payment, conversion_message)) => {
+            Result::Ok((converted_payment, conversion_message)) => {
                 let message = format!("exchange succesful ({})", conversion_message);
                 self.send().direct(
                     &caller,
@@ -241,7 +239,7 @@ pub trait EgldEsdtExchange {
                     message.as_bytes(),
                 );
             }
-            Err(error) => {
+            Result::Err(error) => {
                 let message = format!("refund ({})", String::from_utf8_lossy(error.as_bytes()));
                 self.send()
                     .direct(&caller, &source_token, &payment, message.as_bytes());
@@ -258,29 +256,38 @@ pub trait EgldEsdtExchange {
         self.balance().insert(token_identifier.clone(), balance);
     }
 
-    fn decrease_balance(
+    fn checked_decrease_balance(
         &self,
         token_identifier: &TokenIdentifier,
         amount: &BigUint,
-    ) -> SCResult<()> {
-        if let Some(balance) = self.balance().get(&token_identifier) {
-            if &balance >= amount {
-                self.balance()
-                    .insert(token_identifier.clone(), balance - amount.clone());
-                Ok(())
-            } else {
-                sc_error!(format!(
-                    "Insufficient balance: only {} of {} available",
-                    format_biguint(&balance),
-                    token_to_string(token_identifier)
-                ))
+    ) -> Result<(), String> {
+        match self.balance().get(&token_identifier) {
+            Some(balance) => {
+                if &balance < amount {
+                    Result::Err(format!(
+                        "Insufficient balance: only {} of {} available",
+                        format_biguint(&balance),
+                        token_to_string(token_identifier)?
+                    ))
+                } else {
+                    self.decrease_balance(token_identifier, amount);
+                    Result::Ok(())
+                }
             }
-        } else {
-            sc_error!(format!(
+            None => Result::Err(format!(
                 "No {} tokens are available",
-                token_to_string(token_identifier)
-            ))
+                token_to_string(token_identifier)?
+            )),
         }
+    }
+
+    fn decrease_balance(&self, token_identifier: &TokenIdentifier, amount: &BigUint) {
+        let mut balance = self
+            .balance()
+            .get(&token_identifier)
+            .unwrap_or_else(|| 0u32.into());
+        balance -= amount;
+        self.balance().insert(token_identifier.clone(), balance);
     }
 
     fn conversion_message(
@@ -291,15 +298,15 @@ pub trait EgldEsdtExchange {
         rate_precision: usize,
         converted_token: &BigUint,
         target_token: &TokenIdentifier,
-    ) -> String {
-        format!(
+    ) -> Result<String, String> {
+        Result::Ok(format!(
             "conversion from {} of {}, using exchange rate {}, results in {} of {}",
             format_biguint(payment),
-            token_to_string(source_token),
+            token_to_string(source_token)?,
             format_fixed_precision(rate, rate_precision),
             format_biguint(converted_token),
-            token_to_string(target_token)
-        )
+            token_to_string(target_token)?
+        ))
     }
 
     #[storage_mapper("aggregator")]

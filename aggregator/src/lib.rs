@@ -107,18 +107,19 @@ pub trait Aggregator<BigUint: BigUintApi> {
         #[payment_token] token: TokenIdentifier,
     ) -> SCResult<()> {
         require!(token == self.token_id().get(), "Wrong token type");
-        self.recorded_funds().update(|recorded_funds| recorded_funds.available += &payment);
+        self.recorded_funds()
+            .update(|recorded_funds| recorded_funds.available += &payment);
         let caller = &self.get_caller();
         let deposit = self.get_deposit(caller) + payment;
         self.set_deposit(caller, &deposit);
         Ok(())
     }
 
-    fn get_deposit(&self, address : &Address) -> BigUint {
+    fn get_deposit(&self, address: &Address) -> BigUint {
         self.deposits().get(address).unwrap_or_else(|| 0u32.into())
     }
 
-    fn set_deposit(&self, address : &Address, amount : &BigUint) {
+    fn set_deposit(&self, address: &Address, amount: &BigUint) {
         if amount == &BigUint::zero() {
             self.deposits().remove(address);
         } else {
@@ -206,14 +207,14 @@ pub trait Aggregator<BigUint: BigUintApi> {
         restart_delay: u64,
         timeout: u64,
     ) -> SCResult<()> {
-        let oracle_num = self.oracle_count();
+        let oracle_count = self.oracle_count();
         require!(
             max_submissions >= min_submissions,
             "max must equal/exceed min"
         );
-        require!(oracle_num >= max_submissions, "max cannot exceed total");
+        require!(max_submissions <= oracle_count, "max cannot exceed total");
         require!(
-            oracle_num == 0 || oracle_num > restart_delay,
+            oracle_count == 0 || restart_delay < oracle_count,
             "delay cannot exceed total"
         );
 
@@ -224,7 +225,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
             "insufficient funds for payment"
         );
 
-        if oracle_num > 0 {
+        if oracle_count > 0 {
             require!(min_submissions > 0, "min must be greater than 0");
         }
         self.payment_amount().set(&payment_amount);
@@ -250,16 +251,13 @@ pub trait Aggregator<BigUint: BigUintApi> {
         self.oracle_addresses().len() as u64
     }
 
-    #[endpoint]
-    fn get_round_data(&self, round_id: u64) -> SCResult<Round<BigUint>> {
-        if let Some(round) = self.rounds().get(&round_id) {
-            return Ok(round);
-        }
-        sc_error!("No data present")
+    #[view]
+    fn get_round_data(&self, round_id: u64) -> Option<Round<BigUint>> {
+        self.rounds().get(&round_id)
     }
 
-    #[endpoint]
-    fn latest_round_data(&self) -> SCResult<Round<BigUint>> {
+    #[view]
+    fn latest_round_data(&self) -> Option<Round<BigUint>> {
         self.get_round_data(self.latest_round_id().get())
     }
 
@@ -286,7 +284,8 @@ pub trait Aggregator<BigUint: BigUintApi> {
             "insufficient withdrawable funds"
         );
 
-        self.recorded_funds().update(|recorded_funds| recorded_funds.allocated -= &amount);
+        self.recorded_funds()
+            .update(|recorded_funds| recorded_funds.allocated -= &amount);
         oracle_status.withdrawable -= &amount;
         self.oracles().insert(oracle, oracle_status);
 
@@ -311,7 +310,8 @@ pub trait Aggregator<BigUint: BigUintApi> {
                 >= amount,
             "insufficient reserve funds"
         );
-        self.recorded_funds().update(|recorded_funds| recorded_funds.available -= &amount);
+        self.recorded_funds()
+            .update(|recorded_funds| recorded_funds.available -= &amount);
         let remaining = &deposit - &amount;
         self.set_deposit(caller, &remaining);
         self.send()
@@ -591,20 +591,24 @@ pub trait Aggregator<BigUint: BigUintApi> {
             return Ok(None);
         }
 
-        let new_answer = median::calculate(&details.submissions);
-        let mut round = sc_try!(self.get_round(&round_id));
-        round.answer = new_answer.clone();
-        round.updated_at = self.get_block_timestamp();
-        round.answered_in_round = round_id;
-        self.rounds().insert(round_id, round);
-        self.latest_round_id().set(&round_id);
+        match median::calculate(details.submissions) {
+            Result::Ok(new_answer) => {
+                let mut round = sc_try!(self.get_round(&round_id));
+                round.answer = new_answer.clone().unwrap_or(0u32.into());
+                round.updated_at = self.get_block_timestamp();
+                round.answered_in_round = round_id;
+                self.rounds().insert(round_id, round);
+                self.latest_round_id().set(&round_id);
 
-        return Ok(Some(new_answer));
+                Ok(new_answer)
+            }
+            Result::Err(error_message) => sc_error!(error_message),
+        }
     }
 
-    fn subtract_amount_from_deposits(&self, amount : &BigUint) {
+    fn subtract_amount_from_deposits(&self, amount: &BigUint) {
         let mut remaining = amount.clone();
-        let mut final_amounts : Vec<(Address, BigUint)> = Vec::new();
+        let mut final_amounts: Vec<(Address, BigUint)> = Vec::new();
         for (account, deposit) in self.deposits().iter() {
             if remaining == BigUint::zero() {
                 break;

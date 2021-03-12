@@ -44,9 +44,7 @@ pub trait Oracle {
     fn authorized_nodes(&self) -> SetMapper<Self::Storage, Address>;
 
     #[init]
-    fn init(&self) -> SCResult<()> {
-        Ok(())
-    }
+    fn init(&self) {}
 
     /// This is the entry point that will use the escrow transfer_from.
     /// Afterwards, it essentially calls itself (store_request) which stores the request in state.
@@ -68,13 +66,12 @@ pub trait Oracle {
         }
 
         let mut nonces = self.nonces();
-        if let Some(last_nonce) = nonces.get(&caller) {
-            require!(last_nonce < nonce, "Invalid, already used nonce");
-        }
+        let expected_nonce = nonces.get(&caller).map_or(0, |last_nonce| last_nonce + 1);
+        require!(nonce == expected_nonce, "Invalid nonce");
 
         // store request
         let new_request = OracleRequest {
-            caller_account: caller.clone(),
+            caller: caller.clone(),
             callback_address,
             callback_method,
             data,
@@ -134,7 +131,7 @@ pub trait Oracle {
     #[endpoint]
     fn add_authorization(&self, node: Address) -> SCResult<()> {
         only_owner!(self, "Caller must be owner");
-        self.authorized_nodes().insert(node);
+        require!(self.authorized_nodes().insert(node), "Already authorized");
         Ok(())
     }
 
