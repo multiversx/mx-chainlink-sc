@@ -8,7 +8,6 @@ pub mod median;
 
 use aggregator_data::{Funds, OracleRoundState, OracleStatus, Requester, RoundDetails};
 use aggregator_interface::Round;
-use elrond_wasm::String;
 
 const RESERVE_ROUNDS: u64 = 2;
 const ROUND_MAX: u64 = u64::MAX;
@@ -71,7 +70,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
     fn decimals(&self) -> SingleValueMapper<Self::Storage, u8>;
 
     #[storage_mapper("description")]
-    fn description(&self) -> SingleValueMapper<Self::Storage, String>;
+    fn description(&self) -> SingleValueMapper<Self::Storage, BoxedBytes>;
 
     #[init]
     fn init(
@@ -82,7 +81,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         min_submission_value: BigUint,
         max_submission_value: BigUint,
         decimals: u8,
-        description: String,
+        description: BoxedBytes,
     ) -> SCResult<()> {
         self.token_id().set(&token_id);
         self.recorded_funds().set(&Funds {
@@ -602,7 +601,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
 
                 Ok(new_answer)
             }
-            Result::Err(error_message) => sc_error!(error_message),
+            Result::Err(error_message) => SCResult::Err(error_message.into()),
         }
     }
 

@@ -82,7 +82,6 @@ pub trait Oracle {
         Ok(())
     }
 
-    /// Note that the request_id here is String instead of Vec<u8> as might be expected from the Solidity contract
     #[endpoint]
     fn fulfill_request(
         &self,

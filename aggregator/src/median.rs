@@ -1,13 +1,12 @@
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
-use elrond_wasm::String;
 
 /// Returns the sorted middle, or the average of the two middle indexed items if the
 /// vector has an even number of elements.
 ///
 /// This algorithm has expected runtime O(n), but for adversarially chosen inputs
 /// the runtime is O(n^2).
-pub fn calculate<BigUint>(mut list: Vec<BigUint>) -> Result<Option<BigUint>, String>
+pub fn calculate<BigUint>(mut list: Vec<BigUint>) -> Result<Option<BigUint>, BoxedBytes>
 where
     BigUint: BigUintApi,
 {
@@ -32,12 +31,12 @@ fn quickselect<BigUint: BigUintApi>(
     mut lo: usize,
     mut hi: usize,
     k: usize,
-) -> Result<BigUint, String> {
+) -> Result<BigUint, BoxedBytes> {
     if lo > k {
-        return Result::Err("quickselect lo > k".into());
+        return Result::Err("quickselect lo > k".as_bytes().into());
     }
     if k > hi {
-        return Result::Err("quickselect k > hi".into());
+        return Result::Err("quickselect k > hi".as_bytes().into());
     }
     while lo < hi {
         let pivot_index = partition(list, lo, hi);
@@ -62,15 +61,15 @@ fn quickselect_two<BigUint: BigUintApi>(
     mut hi: usize,
     k1: usize,
     k2: usize,
-) -> Result<(BigUint, BigUint), String> {
+) -> Result<(BigUint, BigUint), BoxedBytes> {
     if k1 >= k2 {
-        return Result::Err("quickselect lo > k".into());
+        return Result::Err("quickselect lo > k".as_bytes().into());
     }
     if !(lo <= k1 && k1 <= hi) {
-        return Result::Err("quickselect k1 out of bounds".into());
+        return Result::Err("quickselect k1 out of bounds".as_bytes().into());
     }
     if !(lo <= k2 && k2 <= hi) {
-        return Result::Err("quickselect k2 out of bounds".into());
+        return Result::Err("quickselect k2 out of bounds".as_bytes().into());
     }
 
     loop {
@@ -81,7 +80,11 @@ fn quickselect_two<BigUint: BigUintApi>(
             lo = pivot_idx + 1;
         } else {
             if !(k1 <= pivot_idx && pivot_idx < k2) {
-                return Result::Err("quickselect k1 <= pivot_idx && pivot_idx < k2".into());
+                return Result::Err(
+                    "quickselect k1 <= pivot_idx && pivot_idx < k2"
+                        .as_bytes()
+                        .into(),
+                );
             }
             let k1th = quickselect(list, lo, pivot_idx, k1)?;
             let k2th = quickselect(list, pivot_idx + 1, hi, k2)?;
