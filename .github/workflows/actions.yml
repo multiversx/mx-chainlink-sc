@@ -1,0 +1,27 @@
+name: Builds and tests
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  rust_test:
+    name: Rust tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: 'ElrondNetwork/elrond-wasm-rs'
+          ref: 'chainlink-work-in-progress'
+          path: 'elrond-wasm-rs'
+      - uses: actions/checkout@v2
+        with:
+          path: 'sc-chainlink-rs'
+      - uses: actions-rs/toolchain@v1
+        with:
+          default: true
+          toolchain: nightly
+      - name: Run rust tests
+        run: cd sc-chainlink-rs && cargo test
