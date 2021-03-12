@@ -15,8 +15,10 @@ jobs:
         with:
           repository: 'ElrondNetwork/elrond-wasm-rs'
           ref: 'chainlink-work-in-progress'
-          path: '../elrond-wasm-rs'
+          path: 'elrond-wasm-rs'
       - uses: actions/checkout@v2
+        with:
+          path: 'sc-chainlink-rs'
       - uses: actions-rs/toolchain@v1
         with:
           default: true
