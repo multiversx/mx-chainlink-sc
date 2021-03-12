@@ -24,4 +24,4 @@ jobs:
           default: true
           toolchain: nightly
       - name: Run rust tests
-        run: cargo test
+        run: cd sc-chainlink-rs && cargo test
