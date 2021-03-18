@@ -18,7 +18,7 @@
                 "from": "address:client1_owner",
                 "to": "address:client1_smart_contract",
                 "value": "0",
-                "function": "send_request",
+                "function": "sendRequest",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
@@ -36,7 +36,7 @@
                 "from": "address:client1_owner",
                 "to": "address:client1_smart_contract",
                 "value": "0",
-                "function": "get_client_data",
+                "function": "getClientData",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
@@ -57,7 +57,7 @@
                 "from": "address:oracle1_owner",
                 "to": "address:oracle1_smart_contract",
                 "value": "0",
-                "function": "requests_as_vec",
+                "function": "requestsAsVec",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
@@ -78,7 +78,7 @@
                 "from": "address:authorized_oracle_node",
                 "to": "address:oracle1_smart_contract",
                 "value": "0",
-                "function": "fulfill_request",
+                "function": "fulfillRequest",
                 "arguments": [
                     "address:client1_smart_contract",
                     "0",
@@ -101,7 +101,7 @@
                 "from": "address:client1_owner",
                 "to": "address:client1_smart_contract",
                 "value": "0",
-                "function": "get_client_data",
+                "function": "getClientData",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"

@@ -24,7 +24,7 @@ pub trait Client<BigUint: BigUintApi> {
     #[storage_set("oracle_address")]
     fn set_oracle_address(&self, oracle_address: Address);
 
-    #[view]
+    #[view(getClientData)]
     fn get_client_data(&self) -> Option<ClientData> {
         if self.client_data().is_empty() {
             None
@@ -47,7 +47,7 @@ pub trait Client<BigUint: BigUintApi> {
         self.set_oracle_address(oracle_address);
     }
 
-    #[endpoint]
+    #[endpoint(sendRequest)]
     fn send_request(&self) -> SCResult<AsyncCall<BigUint>> {
         only_owner!(self, "Caller must be owner");
         let callback_address = self.get_sc_address();
@@ -61,7 +61,7 @@ pub trait Client<BigUint: BigUintApi> {
             .async_call())
     }
 
-    #[endpoint]
+    #[endpoint(reply)]
     fn reply(&self, nonce: u64, answer: BoxedBytes) -> SCResult<()> {
         require!(
             self.get_caller() == self.get_oracle_address(),

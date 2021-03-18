@@ -126,7 +126,7 @@
                 "from": "address:oracle1_owner",
                 "to": "address:oracle1_smart_contract",
                 "value": "0",
-                "function": "add_authorization",
+                "function": "addAuthorization",
                 "arguments": [
                     "address:authorized_oracle_node"
                 ],
@@ -205,12 +205,12 @@
         },
         {
             "step": "scCall",
-            "txId": "1-add_funds - enough for 2 rounds of oracle payments--",
+            "txId": "1-addFunds - enough for 2 rounds of oracle payments--",
             "tx": {
                 "from": "address:aggregator_owner",
                 "to": "address:aggregator_smart_contract",
                 "value": "6,000,000",
-                "function": "add_funds",
+                "function": "addFunds",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
@@ -225,12 +225,12 @@
         },
         {
             "step": "scCall",
-            "txId": "2-available_funds - check that the funds were added--",
+            "txId": "2-availableFunds - check that the funds were added--",
             "tx": {
                 "from": "address:aggregator_owner",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "available_funds",
+                "function": "availableFunds",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
@@ -247,12 +247,12 @@
         },
         {
             "step": "scCall",
-            "txId": "3-change_oracles - add 3 oracles and their admins--",
+            "txId": "3-changeOracles - add 3 oracles and their admins--",
             "tx": {
                 "from": "address:aggregator_owner",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "change_oracles",
+                "function": "changeOracles",
                 "arguments": [
                     "",
                     "address:oracle1_smart_contract|address:oracle2_smart_contract|address:oracle3_smart_contract",

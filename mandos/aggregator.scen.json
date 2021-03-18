@@ -7,12 +7,12 @@
         },
         {
             "step": "scCall",
-            "txId": "1-set_requester_permissions - set the permissions for the requester, for starting a new round--",
+            "txId": "1-setRequesterPermissions - set the permissions for the requester, for starting a new round--",
             "tx": {
                 "from": "address:aggregator_owner",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "set_requester_permissions",
+                "function": "setRequesterPermissions",
                 "arguments": [
                     "address:requester",
                     "1",
@@ -31,12 +31,12 @@
         },
         {
             "step": "scCall",
-            "txId": "2-request_new_round - create round 1--",
+            "txId": "2-requestNewRound - create round 1--",
             "tx": {
                 "from": "address:requester",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "request_new_round",
+                "function": "requestNewRound",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
@@ -53,12 +53,12 @@
         },
         {
             "step": "scCall",
-            "txId": "3-oracle_round_state - check the round state of oracle 1--",
+            "txId": "3-oracleRoundState - check the round state of oracle 1--",
             "tx": {
                 "from": "address:oracle1_smart_contract",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "oracle_round_state",
+                "function": "oracleRoundState",
                 "arguments": [
                     "address:oracle1_smart_contract",
                     "0"
@@ -101,12 +101,12 @@
         },
         {
             "step": "scCall",
-            "txId": "5-latest_round_data - before submitting at least twice the latest round data should be empty--",
+            "txId": "5-latestRoundData - before submitting at least twice the latest round data should be empty--",
             "tx": {
                 "from": "address:oracle1_smart_contract",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "latest_round_data",
+                "function": "latestRoundData",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
@@ -146,12 +146,12 @@
         },
         {
             "step": "scCall",
-            "txId": "7-latest_round_data - after submitting twice the latest round data should be the median between the submitted values--",
+            "txId": "7-latestRoundData - after submitting twice the latest round data should be the median between the submitted values--",
             "tx": {
                 "from": "address:oracle1_smart_contract",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "latest_round_data",
+                "function": "latestRoundData",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
@@ -168,12 +168,12 @@
         },
         {
             "step": "scCall",
-            "txId": "8-withdrawable_payment - check that oracle 1 can withdraw funds due to his submission--",
+            "txId": "8-withdrawablePayment - check that oracle 1 can withdraw funds due to his submission--",
             "tx": {
                 "from": "address:oracle1_smart_contract",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "withdrawable_payment",
+                "function": "withdrawablePayment",
                 "arguments": [
                     "address:oracle1_smart_contract"
                 ],
@@ -192,12 +192,12 @@
         },
         {
             "step": "scCall",
-            "txId": "9-withdraw_payment - oracle 1's admin withdraws the funds--",
+            "txId": "9-withdrawPayment - oracle 1's admin withdraws the funds--",
             "tx": {
                 "from": "address:oracle1_owner",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "withdraw_payment",
+                "function": "withdrawPayment",
                 "arguments": [
                     "address:oracle1_smart_contract",
                     "address:oracle1_owner",
@@ -216,12 +216,12 @@
         },
         {
             "step": "scCall",
-            "txId": "10-withdrawable_payment - check that the funds after withdrawal are updated correctly--",
+            "txId": "10-withdrawablePayment - check that the funds after withdrawal are updated correctly--",
             "tx": {
                 "from": "address:oracle1_smart_contract",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "withdrawable_payment",
+                "function": "withdrawablePayment",
                 "arguments": [
                     "address:oracle1_smart_contract"
                 ],
@@ -240,12 +240,12 @@
         },
         {
             "step": "scCall",
-            "txId": "11-allocated_funds - check that the allocated funds after withdrawal are updated correctly--",
+            "txId": "11-allocatedFunds - check that the allocated funds after withdrawal are updated correctly--",
             "tx": {
                 "from": "address:oracle1_smart_contract",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "allocated_funds",
+                "function": "allocatedFunds",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
@@ -262,12 +262,12 @@
         },
         {
             "step": "scCall",
-            "txId": "12-available_funds - check that the available funds after withdrawal are updated correctly--",
+            "txId": "12-availableFunds - check that the available funds after withdrawal are updated correctly--",
             "tx": {
                 "from": "address:oracle1_smart_contract",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "available_funds",
+                "function": "availableFunds",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
@@ -357,12 +357,12 @@
         },
         {
             "step": "scCall",
-            "txId": "13-request_new_round - create round 2--",
+            "txId": "13-requestNewRound - create round 2--",
             "tx": {
                 "from": "address:requester",
                 "to": "address:aggregator_smart_contract",
                 "value": "0",
-                "function": "request_new_round",
+                "function": "requestNewRound",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"

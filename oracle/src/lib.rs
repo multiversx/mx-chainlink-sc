@@ -24,7 +24,7 @@ pub trait Oracle {
         &self,
     ) -> MapStorageMapper<Self::Storage, Address, MapMapper<Self::Storage, u64, OracleRequest>>;
 
-    #[view]
+    #[view(requestsAsVec)]
     fn requests_as_vec(&self) -> MultiResultVec<RequestView> {
         let mut vec: Vec<RequestView> = Vec::new();
         for (address, request) in self.requests().iter() {
@@ -39,7 +39,7 @@ pub trait Oracle {
         vec.into()
     }
 
-    #[view]
+    #[view(authorizedNodes)]
     #[storage_mapper("authorized_nodes")]
     fn authorized_nodes(&self) -> SetMapper<Self::Storage, Address>;
 
@@ -48,7 +48,7 @@ pub trait Oracle {
 
     /// This is the entry point that will use the escrow transfer_from.
     /// Afterwards, it essentially calls itself (store_request) which stores the request in state.
-    #[endpoint]
+    #[endpoint(request)]
     fn request(
         &self,
         callback_address: Address,
@@ -82,7 +82,7 @@ pub trait Oracle {
         Ok(())
     }
 
-    #[endpoint]
+    #[endpoint(fulfillRequest)]
     fn fulfill_request(
         &self,
         address: Address,
@@ -114,7 +114,7 @@ pub trait Oracle {
         Ok(client.reply(nonce, data).async_call())
     }
 
-    #[endpoint]
+    #[endpoint(submit)]
     fn submit(
         &self,
         aggregator: Address,
@@ -127,14 +127,14 @@ pub trait Oracle {
             .async_call())
     }
 
-    #[endpoint]
+    #[endpoint(addAuthorization)]
     fn add_authorization(&self, node: Address) -> SCResult<()> {
         only_owner!(self, "Caller must be owner");
         require!(self.authorized_nodes().insert(node), "Already authorized");
         Ok(())
     }
 
-    #[endpoint]
+    #[endpoint(removeAuthorization)]
     fn remove_authorization(&self, node: Address) -> SCResult<()> {
         only_owner!(self, "Caller must be owner");
         require!(

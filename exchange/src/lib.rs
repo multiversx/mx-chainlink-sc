@@ -53,7 +53,7 @@ pub trait EgldEsdtExchange {
     }
 
     #[payable("*")]
-    #[endpoint]
+    #[endpoint(deposit)]
     fn deposit(
         &self,
         #[payment] payment: BigUint,
@@ -65,7 +65,7 @@ pub trait EgldEsdtExchange {
     }
 
     #[payable("*")]
-    #[endpoint]
+    #[endpoint(exchange)]
     fn exchange(
         &self,
         #[payment] payment: BigUint,
