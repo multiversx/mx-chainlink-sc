@@ -18,13 +18,13 @@
                 "from": "address:client1_owner",
                 "to": "address:client1_smart_contract",
                 "value": "0",
-                "function": "send_request",
+                "function": "sendRequest",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
             },
             "expect": {
-                "status": "",
+                "status": "0",
                 "gas": "*",
                 "refund": "*"
             }
@@ -36,16 +36,14 @@
                 "from": "address:client1_owner",
                 "to": "address:client1_smart_contract",
                 "value": "0",
-                "function": "get_client_data",
+                "function": "getClientData",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
             },
             "expect": {
-                "out": [
-                    ""
-                ],
-                "status": "",
+                "out": [],
+                "status": "0",
                 "gas": "*",
                 "refund": "*"
             }
@@ -57,16 +55,16 @@
                 "from": "address:oracle1_owner",
                 "to": "address:oracle1_smart_contract",
                 "value": "0",
-                "function": "requests_as_vec",
+                "function": "requestsAsVec",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
             },
             "expect": {
                 "out": [
-                    "address:client1_smart_contract|u64:100|u32:0"
+                    "address:client1_smart_contract|u64:0|u32:0"
                 ],
-                "status": "",
+                "status": "0",
                 "gas": "*",
                 "refund": "*"
             }
@@ -78,10 +76,10 @@
                 "from": "address:authorized_oracle_node",
                 "to": "address:oracle1_smart_contract",
                 "value": "0",
-                "function": "fulfill_request",
+                "function": "fulfillRequest",
                 "arguments": [
                     "address:client1_smart_contract",
-                    "100",
+                    "0",
                     "str:42"
                 ],
                 "gasLimit": "100,000,000",
@@ -89,7 +87,7 @@
             },
             "expect": {
                 "out": [],
-                "status": "",
+                "status": "0",
                 "gas": "*",
                 "refund": "*"
             }
@@ -101,16 +99,16 @@
                 "from": "address:client1_owner",
                 "to": "address:client1_smart_contract",
                 "value": "0",
-                "function": "get_client_data",
+                "function": "getClientData",
                 "arguments": [],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
             },
             "expect": {
                 "out": [
-                    "0x010000000000000064000000023432"
+                    "u64:0|nested:str:42"
                 ],
-                "status": "",
+                "status": "0",
                 "gas": "*",
                 "refund": "*"
             }

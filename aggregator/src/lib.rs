@@ -8,7 +8,6 @@ pub mod median;
 
 use aggregator_data::{Funds, OracleRoundState, OracleStatus, Requester, RoundDetails};
 use aggregator_interface::Round;
-use elrond_wasm::String;
 
 const RESERVE_ROUNDS: u64 = 2;
 const ROUND_MAX: u64 = u64::MAX;
@@ -71,7 +70,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
     fn decimals(&self) -> SingleValueMapper<Self::Storage, u8>;
 
     #[storage_mapper("description")]
-    fn description(&self) -> SingleValueMapper<Self::Storage, String>;
+    fn description(&self) -> SingleValueMapper<Self::Storage, BoxedBytes>;
 
     #[init]
     fn init(
@@ -82,7 +81,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         min_submission_value: BigUint,
         max_submission_value: BigUint,
         decimals: u8,
-        description: String,
+        description: BoxedBytes,
     ) -> SCResult<()> {
         self.token_id().set(&token_id);
         self.recorded_funds().set(&Funds {
@@ -99,7 +98,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(())
     }
 
-    #[endpoint]
+    #[endpoint(addFunds)]
     #[payable("*")]
     fn add_funds(
         &self,
@@ -107,18 +106,19 @@ pub trait Aggregator<BigUint: BigUintApi> {
         #[payment_token] token: TokenIdentifier,
     ) -> SCResult<()> {
         require!(token == self.token_id().get(), "Wrong token type");
-        self.recorded_funds().update(|recorded_funds| recorded_funds.available += &payment);
+        self.recorded_funds()
+            .update(|recorded_funds| recorded_funds.available += &payment);
         let caller = &self.get_caller();
         let deposit = self.get_deposit(caller) + payment;
         self.set_deposit(caller, &deposit);
         Ok(())
     }
 
-    fn get_deposit(&self, address : &Address) -> BigUint {
+    fn get_deposit(&self, address: &Address) -> BigUint {
         self.deposits().get(address).unwrap_or_else(|| 0u32.into())
     }
 
-    fn set_deposit(&self, address : &Address, amount : &BigUint) {
+    fn set_deposit(&self, address: &Address, amount: &BigUint) {
         if amount == &BigUint::zero() {
             self.deposits().remove(address);
         } else {
@@ -126,7 +126,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         }
     }
 
-    #[endpoint]
+    #[endpoint(submit)]
     fn submit(&self, round_id: u64, submission: BigUint) -> SCResult<()> {
         sc_try!(self.validate_oracle_round(&self.get_caller(), &round_id));
         require!(
@@ -146,7 +146,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(())
     }
 
-    #[endpoint]
+    #[endpoint(changeOracles)]
     fn change_oracles(
         &self,
         removed: Vec<Address>,
@@ -179,7 +179,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(())
     }
 
-    #[endpoint]
+    #[endpoint(updateFutureRounds)]
     fn update_future_rounds(
         &self,
         payment_amount: BigUint,
@@ -206,14 +206,14 @@ pub trait Aggregator<BigUint: BigUintApi> {
         restart_delay: u64,
         timeout: u64,
     ) -> SCResult<()> {
-        let oracle_num = self.oracle_count();
+        let oracle_count = self.oracle_count();
         require!(
             max_submissions >= min_submissions,
             "max must equal/exceed min"
         );
-        require!(oracle_num >= max_submissions, "max cannot exceed total");
+        require!(max_submissions <= oracle_count, "max cannot exceed total");
         require!(
-            oracle_num == 0 || oracle_num > restart_delay,
+            oracle_count == 0 || restart_delay < oracle_count,
             "delay cannot exceed total"
         );
 
@@ -224,7 +224,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
             "insufficient funds for payment"
         );
 
-        if oracle_num > 0 {
+        if oracle_count > 0 {
             require!(min_submissions > 0, "min must be greater than 0");
         }
         self.payment_amount().set(&payment_amount);
@@ -235,40 +235,37 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(())
     }
 
-    #[view]
+    #[view(allocatedFunds)]
     fn allocated_funds(&self) -> BigUint {
         self.recorded_funds().get().allocated
     }
 
-    #[view]
+    #[view(availableFunds)]
     fn available_funds(&self) -> BigUint {
         self.recorded_funds().get().available
     }
 
-    #[view]
+    #[view(oracleCount)]
     fn oracle_count(&self) -> u64 {
         self.oracle_addresses().len() as u64
     }
 
-    #[endpoint]
-    fn get_round_data(&self, round_id: u64) -> SCResult<Round<BigUint>> {
-        if let Some(round) = self.rounds().get(&round_id) {
-            return Ok(round);
-        }
-        sc_error!("No data present")
+    #[view(getRoundData)]
+    fn get_round_data(&self, round_id: u64) -> OptionalResult<Round<BigUint>> {
+        self.rounds().get(&round_id).into()
     }
 
-    #[endpoint]
-    fn latest_round_data(&self) -> SCResult<Round<BigUint>> {
+    #[view(latestRoundData)]
+    fn latest_round_data(&self) -> OptionalResult<Round<BigUint>> {
         self.get_round_data(self.latest_round_id().get())
     }
 
-    #[view]
+    #[view(withdrawablePayment)]
     fn withdrawable_payment(&self, oracle: Address) -> SCResult<BigUint> {
         Ok(sc_try!(self.get_oracle_status_result(&oracle)).withdrawable)
     }
 
-    #[endpoint]
+    #[endpoint(withdrawPayment)]
     fn withdraw_payment(
         &self,
         oracle: Address,
@@ -286,7 +283,8 @@ pub trait Aggregator<BigUint: BigUintApi> {
             "insufficient withdrawable funds"
         );
 
-        self.recorded_funds().update(|recorded_funds| recorded_funds.allocated -= &amount);
+        self.recorded_funds()
+            .update(|recorded_funds| recorded_funds.allocated -= &amount);
         oracle_status.withdrawable -= &amount;
         self.oracles().insert(oracle, oracle_status);
 
@@ -295,12 +293,12 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(())
     }
 
-    #[view]
+    #[view(withdrawableAddedFunds)]
     fn withdrawable_added_funds(&self) -> BigUint {
         self.get_deposit(&self.get_caller())
     }
 
-    #[endpoint]
+    #[endpoint(withdrawFunds)]
     fn withdraw_funds(&self, amount: BigUint) -> SCResult<()> {
         let recorded_funds = self.recorded_funds().get();
         let caller = &self.get_caller();
@@ -311,7 +309,8 @@ pub trait Aggregator<BigUint: BigUintApi> {
                 >= amount,
             "insufficient reserve funds"
         );
-        self.recorded_funds().update(|recorded_funds| recorded_funds.available -= &amount);
+        self.recorded_funds()
+            .update(|recorded_funds| recorded_funds.available -= &amount);
         let remaining = &deposit - &amount;
         self.set_deposit(caller, &remaining);
         self.send()
@@ -319,12 +318,12 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(())
     }
 
-    #[view]
+    #[view(getAdmin)]
     fn get_admin(&self, oracle: Address) -> SCResult<Address> {
         Ok(sc_try!(self.get_oracle_status_result(&oracle)).admin)
     }
 
-    #[endpoint]
+    #[endpoint(transferAdmin)]
     fn transfer_admin(&self, oracle: Address, new_admin: Address) -> SCResult<()> {
         let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
         require!(
@@ -336,7 +335,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(())
     }
 
-    #[endpoint]
+    #[endpoint(acceptAdmin)]
     fn accept_admin(&self, oracle: Address) -> SCResult<()> {
         let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
         let caller = self.get_caller();
@@ -350,7 +349,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(())
     }
 
-    #[endpoint]
+    #[endpoint(requestNewRound)]
     fn request_new_round(&self) -> SCResult<u64> {
         let requester_option = self.requesters().get(&self.get_caller());
         require!(
@@ -372,7 +371,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(new_round_id)
     }
 
-    #[endpoint]
+    #[endpoint(setRequesterPermissions)]
     fn set_requester_permissions(
         &self,
         requester: Address,
@@ -395,7 +394,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(())
     }
 
-    #[view]
+    #[view(oracleRoundState)]
     fn oracle_round_state(
         &self,
         oracle: Address,
@@ -591,20 +590,24 @@ pub trait Aggregator<BigUint: BigUintApi> {
             return Ok(None);
         }
 
-        let new_answer = median::calculate(&details.submissions);
-        let mut round = sc_try!(self.get_round(&round_id));
-        round.answer = new_answer.clone();
-        round.updated_at = self.get_block_timestamp();
-        round.answered_in_round = round_id;
-        self.rounds().insert(round_id, round);
-        self.latest_round_id().set(&round_id);
+        match median::calculate(details.submissions) {
+            Result::Ok(new_answer) => {
+                let mut round = sc_try!(self.get_round(&round_id));
+                round.answer = new_answer.clone().unwrap_or(0u32.into());
+                round.updated_at = self.get_block_timestamp();
+                round.answered_in_round = round_id;
+                self.rounds().insert(round_id, round);
+                self.latest_round_id().set(&round_id);
 
-        return Ok(Some(new_answer));
+                Ok(new_answer)
+            }
+            Result::Err(error_message) => SCResult::Err(error_message.into()),
+        }
     }
 
-    fn subtract_amount_from_deposits(&self, amount : &BigUint) {
+    fn subtract_amount_from_deposits(&self, amount: &BigUint) {
         let mut remaining = amount.clone();
-        let mut final_amounts : Vec<(Address, BigUint)> = Vec::new();
+        let mut final_amounts: Vec<(Address, BigUint)> = Vec::new();
         for (account, deposit) in self.deposits().iter() {
             if remaining == BigUint::zero() {
                 break;
@@ -693,7 +696,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(round_id + 1 == rr_id && round.updated_at == 0)
     }
 
-    #[view]
+    #[view(requiredReserve)]
     fn required_reserve(&self, payment: &BigUint) -> BigUint {
         payment * &BigUint::from(self.oracle_count()) * BigUint::from(RESERVE_ROUNDS)
     }
@@ -804,7 +807,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         sc_error!("No requester has the given address")
     }
 
-    #[view]
+    #[view(getOracles)]
     fn get_oracles(&self) -> SetMapper<Self::Storage, Address> {
         self.oracle_addresses()
     }

@@ -24,7 +24,7 @@ pub trait Oracle {
         &self,
     ) -> MapStorageMapper<Self::Storage, Address, MapMapper<Self::Storage, u64, OracleRequest>>;
 
-    #[view]
+    #[view(requestsAsVec)]
     fn requests_as_vec(&self) -> MultiResultVec<RequestView> {
         let mut vec: Vec<RequestView> = Vec::new();
         for (address, request) in self.requests().iter() {
@@ -39,18 +39,16 @@ pub trait Oracle {
         vec.into()
     }
 
-    #[view]
+    #[view(authorizedNodes)]
     #[storage_mapper("authorized_nodes")]
     fn authorized_nodes(&self) -> SetMapper<Self::Storage, Address>;
 
     #[init]
-    fn init(&self) -> SCResult<()> {
-        Ok(())
-    }
+    fn init(&self) {}
 
     /// This is the entry point that will use the escrow transfer_from.
     /// Afterwards, it essentially calls itself (store_request) which stores the request in state.
-    #[endpoint]
+    #[endpoint(request)]
     fn request(
         &self,
         callback_address: Address,
@@ -68,13 +66,12 @@ pub trait Oracle {
         }
 
         let mut nonces = self.nonces();
-        if let Some(last_nonce) = nonces.get(&caller) {
-            require!(last_nonce < nonce, "Invalid, already used nonce");
-        }
+        let expected_nonce = nonces.get(&caller).map_or(0, |last_nonce| last_nonce + 1);
+        require!(nonce == expected_nonce, "Invalid nonce");
 
         // store request
         let new_request = OracleRequest {
-            caller_account: caller.clone(),
+            caller: caller.clone(),
             callback_address,
             callback_method,
             data,
@@ -85,8 +82,7 @@ pub trait Oracle {
         Ok(())
     }
 
-    /// Note that the request_id here is String instead of Vec<u8> as might be expected from the Solidity contract
-    #[endpoint]
+    #[endpoint(fulfillRequest)]
     fn fulfill_request(
         &self,
         address: Address,
@@ -118,7 +114,7 @@ pub trait Oracle {
         Ok(client.reply(nonce, data).async_call())
     }
 
-    #[endpoint]
+    #[endpoint(submit)]
     fn submit(
         &self,
         aggregator: Address,
@@ -131,14 +127,14 @@ pub trait Oracle {
             .async_call())
     }
 
-    #[endpoint]
+    #[endpoint(addAuthorization)]
     fn add_authorization(&self, node: Address) -> SCResult<()> {
         only_owner!(self, "Caller must be owner");
-        self.authorized_nodes().insert(node);
+        require!(self.authorized_nodes().insert(node), "Already authorized");
         Ok(())
     }
 
-    #[endpoint]
+    #[endpoint(removeAuthorization)]
     fn remove_authorization(&self, node: Address) -> SCResult<()> {
         only_owner!(self, "Caller must be owner");
         require!(

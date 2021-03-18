@@ -24,25 +24,36 @@ pub trait Client<BigUint: BigUintApi> {
     #[storage_set("oracle_address")]
     fn set_oracle_address(&self, oracle_address: Address);
 
-    #[view]
-    #[storage_get("client_data")]
-    fn get_client_data(&self) -> Option<ClientData>;
-
-    #[storage_set("client_data")]
-    fn set_client_data(&self, user_data: Option<ClientData>);
-
-    #[init]
-    fn init(&self, oracle_address: Address) -> SCResult<()> {
-        self.set_oracle_address(oracle_address);
-        Ok(())
+    #[view(getClientData)]
+    fn get_client_data(&self) -> OptionalResult<ClientData> {
+        if self.client_data().is_empty() {
+            OptionalResult::None
+        } else {
+            OptionalResult::Some(self.client_data().get())
+        }
     }
 
-    #[endpoint]
+    #[storage_mapper("client_data")]
+    fn client_data(&self) -> SingleValueMapper<Self::Storage, ClientData>;
+
+    #[storage_mapper("nonce")]
+    fn nonce(&self) -> SingleValueMapper<Self::Storage, u64>;
+
+    #[storage_set("client_data")]
+    fn set_client_data(&self, user_data: ClientData);
+
+    #[init]
+    fn init(&self, oracle_address: Address) {
+        self.set_oracle_address(oracle_address);
+    }
+
+    #[endpoint(sendRequest)]
     fn send_request(&self) -> SCResult<AsyncCall<BigUint>> {
         only_owner!(self, "Caller must be owner");
         let callback_address = self.get_sc_address();
-        let callback_method = BoxedBytes::from_concat(&[b"reply"]);
-        let nonce = self.get_block_nonce();
+        let callback_method = BoxedBytes::from(&b"reply"[..]);
+        let nonce = self.nonce().get();
+        self.nonce().update(|nonce| *nonce += 1);
         let data = BoxedBytes::empty();
         let oracle = contract_call!(self, self.get_oracle_address(), OracleInterfaceProxy);
         Ok(oracle
@@ -50,13 +61,13 @@ pub trait Client<BigUint: BigUintApi> {
             .async_call())
     }
 
-    #[endpoint]
+    #[endpoint(reply)]
     fn reply(&self, nonce: u64, answer: BoxedBytes) -> SCResult<()> {
         require!(
             self.get_caller() == self.get_oracle_address(),
             "Only oracle can reply"
         );
-        self.set_client_data(Some(ClientData { nonce, answer }));
+        self.client_data().set(&ClientData { nonce, answer });
         Ok(())
     }
 }

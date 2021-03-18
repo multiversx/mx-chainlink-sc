@@ -1,50 +1,43 @@
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
-/**
-* @notice Returns the sorted middle, or the average of the two middle indexed items if the
-* array has an even number of elements.
-* @dev The list passed as an argument isn't modified.
-* @dev This algorithm has expected runtime O(n), but for adversarially chosen inputs
-* the runtime is O(n^2).
-* @param list The list of elements to compare
-*/
-pub fn calculate<BigUint: BigUintApi>(list: &Vec<BigUint>) -> BigUint {
-    calculate_inplace(list.clone())
-}
-
-/**
-* @notice See documentation for function calculate.
-* @dev The list passed as an argument may be permuted.
-*/
-fn calculate_inplace<BigUint>(mut list: Vec<BigUint>) -> BigUint
+/// Returns the sorted middle, or the average of the two middle indexed items if the
+/// vector has an even number of elements.
+///
+/// This algorithm has expected runtime O(n), but for adversarially chosen inputs
+/// the runtime is O(n^2).
+pub fn calculate<BigUint>(mut list: Vec<BigUint>) -> Result<Option<BigUint>, BoxedBytes>
 where
     BigUint: BigUintApi,
 {
-    assert!(!list.is_empty(), "list must not be empty");
+    if list.is_empty() {
+        return Result::Ok(None);
+    }
     let len = list.len();
     let middle_index = len / 2;
     if len % 2 == 0 {
         let (median1, median2) =
-            quickselect_two(&mut list, 0, len - 1, middle_index - 1, middle_index);
-        return (median1 + median2) / 2u64.into();
+            quickselect_two(&mut list, 0, len - 1, middle_index - 1, middle_index)?;
+        Result::Ok(Some((median1 + median2) / 2u64.into()))
     } else {
-        return quickselect(&mut list, 0, len - 1, middle_index);
+        quickselect(&mut list, 0, len - 1, middle_index).map(|value| Some(value))
     }
 }
 
-/**
-* @notice Selects the k-th ranked element from list, looking only at indices between lo and hi
-* (inclusive). Modifies list in-place.
-*/
+/// Selects the k-th ranked element from list, looking only at indices between lo and hi
+/// (inclusive). Modifies list in-place.
 fn quickselect<BigUint: BigUintApi>(
     list: &mut Vec<BigUint>,
     mut lo: usize,
     mut hi: usize,
     k: usize,
-) -> BigUint {
-    assert!(lo <= k);
-    assert!(k <= hi);
+) -> Result<BigUint, BoxedBytes> {
+    if lo > k {
+        return Result::Err("quickselect lo > k".as_bytes().into());
+    }
+    if k > hi {
+        return Result::Err("quickselect k > hi".as_bytes().into());
+    }
     while lo < hi {
         let pivot_index = partition(list, lo, hi);
         if k <= pivot_index {
@@ -57,23 +50,27 @@ fn quickselect<BigUint: BigUintApi>(
             lo = pivot_index + 1;
         }
     }
-    return list[lo].clone();
+    Result::Ok(list[lo].clone())
 }
 
-/**
-* @notice Selects the k1-th and k2-th ranked elements from list, looking only at indices between
-* lo and hi (inclusive). Modifies list in-place.
-*/
+/// Selects the k1-th and k2-th ranked elements from list, looking only at indices between
+/// lo and hi (inclusive). Modifies list in-place.
 fn quickselect_two<BigUint: BigUintApi>(
     list: &mut Vec<BigUint>,
     mut lo: usize,
     mut hi: usize,
     k1: usize,
     k2: usize,
-) -> (BigUint, BigUint) {
-    assert!(k1 < k2);
-    assert!(lo <= k1 && k1 <= hi);
-    assert!(lo <= k2 && k2 <= hi);
+) -> Result<(BigUint, BigUint), BoxedBytes> {
+    if k1 >= k2 {
+        return Result::Err("quickselect lo > k".as_bytes().into());
+    }
+    if !(lo <= k1 && k1 <= hi) {
+        return Result::Err("quickselect k1 out of bounds".as_bytes().into());
+    }
+    if !(lo <= k2 && k2 <= hi) {
+        return Result::Err("quickselect k2 out of bounds".as_bytes().into());
+    }
 
     loop {
         let pivot_idx = partition(list, lo, hi);
@@ -82,40 +79,36 @@ fn quickselect_two<BigUint: BigUintApi>(
         } else if pivot_idx < k1 {
             lo = pivot_idx + 1;
         } else {
-            assert!(k1 <= pivot_idx && pivot_idx < k2);
-            let k1th = quickselect(list, lo, pivot_idx, k1);
-            let k2th = quickselect(list, pivot_idx + 1, hi, k2);
-            return (k1th, k2th);
+            if !(k1 <= pivot_idx && pivot_idx < k2) {
+                return Result::Err(
+                    "quickselect k1 <= pivot_idx && pivot_idx < k2"
+                        .as_bytes()
+                        .into(),
+                );
+            }
+            let k1th = quickselect(list, lo, pivot_idx, k1)?;
+            let k2th = quickselect(list, pivot_idx + 1, hi, k2)?;
+            return Result::Ok((k1th, k2th));
         }
     }
 }
 
-/**
-* @notice Partitions list in-place using Hoare's partitioning scheme.
-* Only elements of list between indices lo and hi (inclusive) will be modified.
-* Returns an index i, such that:
-* - lo <= i < hi
-* - forall j in [lo, i]. list[j] <= list[i]
-* - forall j in [i, hi]. list[i] <= list[j]
-*/
+/// Partitions list in-place using Hoare's partitioning scheme.
+/// Only elements of list between indices lo and hi (inclusive) will be modified.
+/// Returns an index i, such that:
+/// - lo <= i < hi
+/// - forall j in [lo, i]. list[j] <= list[i]
+/// - forall j in [i, hi]. list[i] <= list[j]
 fn partition<BigUint: BigUintApi>(list: &mut Vec<BigUint>, mut lo: usize, mut hi: usize) -> usize {
     // We don't care about overflow of the addition, because it would require a list
     // larger than any feasible computer's memory.
     let pivot = list[(lo + hi) / 2].clone();
-    lo = lo.overflowing_sub(1).0; // this can underflow. that's intentional.
-    hi += 1;
     loop {
-        loop {
-            lo = lo.overflowing_add(1).0;
-            if !(list[lo] < pivot) {
-                break;
-            }
+        while list[lo] < pivot {
+            lo += 1;
         }
-        loop {
+        while list[hi] > pivot {
             hi -= 1;
-            if !(list[hi] > pivot) {
-                break;
-            }
         }
         if lo < hi {
             (list[lo], list[hi]) = (list[hi].clone(), list[lo].clone());
