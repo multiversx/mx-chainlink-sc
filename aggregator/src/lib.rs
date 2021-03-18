@@ -251,12 +251,12 @@ pub trait Aggregator<BigUint: BigUintApi> {
     }
 
     #[view(getRoundData)]
-    fn get_round_data(&self, round_id: u64) -> Option<Round<BigUint>> {
-        self.rounds().get(&round_id)
+    fn get_round_data(&self, round_id: u64) -> OptionalResult<Round<BigUint>> {
+        self.rounds().get(&round_id).into()
     }
 
     #[view(latestRoundData)]
-    fn latest_round_data(&self) -> Option<Round<BigUint>> {
+    fn latest_round_data(&self) -> OptionalResult<Round<BigUint>> {
         self.get_round_data(self.latest_round_id().get())
     }
 

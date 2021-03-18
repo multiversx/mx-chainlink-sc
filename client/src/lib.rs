@@ -25,11 +25,11 @@ pub trait Client<BigUint: BigUintApi> {
     fn set_oracle_address(&self, oracle_address: Address);
 
     #[view(getClientData)]
-    fn get_client_data(&self) -> Option<ClientData> {
+    fn get_client_data(&self) -> OptionalResult<ClientData> {
         if self.client_data().is_empty() {
-            None
+            OptionalResult::None
         } else {
-            Some(self.client_data().get())
+            OptionalResult::Some(self.client_data().get())
         }
     }
 
