@@ -13,7 +13,7 @@ pub trait OracleInterface {
         callback_method: BoxedBytes,
         nonce: u64,
         data: BoxedBytes,
-    ) -> ContractCall<BigUint>;
+    ) -> ContractCall<BigUint, ()>;
 }
 
 #[elrond_wasm_derive::contract(ClientImpl)]

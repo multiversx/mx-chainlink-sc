@@ -11,7 +11,7 @@ elrond_wasm::derive_imports!();
 
 #[elrond_wasm_derive::callable(ClientInterfaceProxy)]
 pub trait ClientInterface<BigUint: BigIntApi> {
-    fn reply(&self, nonce: u64, answer: BoxedBytes) -> ContractCall<BigUint>;
+    fn reply(&self, nonce: u64, answer: BoxedBytes) -> ContractCall<BigUint, ()>;
 }
 
 #[elrond_wasm_derive::contract(OracleImpl)]

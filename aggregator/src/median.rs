@@ -1,129 +1,49 @@
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
+use crate::aggregator_interface::Submission;
+
+/// Calculates the median for each of the values in a Submission
+pub fn calculate_submission_median<BigUint: BigUintApi>(
+    submissions: Vec<Submission<BigUint>>,
+) -> Result<Option<Submission<BigUint>>, SCError> {
+    if submissions.is_empty() {
+        return Result::Ok(None);
+    }
+    let values_count = submissions.first().unwrap().values.len();
+    let iter = (0..values_count).map(|index| {
+        submissions
+            .iter()
+            .map(|submission| submission.values.iter())
+            .flatten()
+            .skip(index)
+            .step_by(values_count)
+    });
+    let mut new_submission = Submission::<BigUint> { values: Vec::new() };
+    for values in iter {
+        let median = calculate(values.cloned().collect())?.unwrap().clone();
+        new_submission.values.push(median);
+    }
+    Result::Ok(Some(new_submission))
+}
 
 /// Returns the sorted middle, or the average of the two middle indexed items if the
 /// vector has an even number of elements.
-///
-/// This algorithm has expected runtime O(n), but for adversarially chosen inputs
-/// the runtime is O(n^2).
-pub fn calculate<BigUint>(mut list: Vec<BigUint>) -> Result<Option<BigUint>, BoxedBytes>
+pub fn calculate<BigUint: BigUintApi>(mut list: Vec<BigUint>) -> Result<Option<BigUint>, SCError>
 where
     BigUint: BigUintApi,
 {
     if list.is_empty() {
         return Result::Ok(None);
     }
+    list.sort();
     let len = list.len();
     let middle_index = len / 2;
     if len % 2 == 0 {
-        let (median1, median2) =
-            quickselect_two(&mut list, 0, len - 1, middle_index - 1, middle_index)?;
-        Result::Ok(Some((median1 + median2) / 2u64.into()))
+        let median1 = list.get(middle_index - 1).ok_or("median1 invalid index")?;
+        let median2 = list.get(middle_index).ok_or("median2 invalid index")?;
+        Result::Ok(Some((median1.clone() + median2.clone()) / 2u64.into()))
     } else {
-        quickselect(&mut list, 0, len - 1, middle_index).map(|value| Some(value))
-    }
-}
-
-/// Selects the k-th ranked element from list, looking only at indices between lo and hi
-/// (inclusive). Modifies list in-place.
-fn quickselect<BigUint: BigUintApi>(
-    list: &mut Vec<BigUint>,
-    mut lo: usize,
-    mut hi: usize,
-    k: usize,
-) -> Result<BigUint, BoxedBytes> {
-    if lo > k {
-        return Result::Err("quickselect lo > k".as_bytes().into());
-    }
-    if k > hi {
-        return Result::Err("quickselect k > hi".as_bytes().into());
-    }
-    while lo < hi {
-        let pivot_index = partition(list, lo, hi);
-        if k <= pivot_index {
-            // since pivotIndex < (original hi passed to partition),
-            // termination is guaranteed in this case
-            hi = pivot_index;
-        } else {
-            // since (original lo passed to partition) <= pivotIndex,
-            // termination is guaranteed in this case
-            lo = pivot_index + 1;
-        }
-    }
-    Result::Ok(list[lo].clone())
-}
-
-/// Selects the k1-th and k2-th ranked elements from list, looking only at indices between
-/// lo and hi (inclusive). Modifies list in-place.
-fn quickselect_two<BigUint: BigUintApi>(
-    list: &mut Vec<BigUint>,
-    mut lo: usize,
-    mut hi: usize,
-    k1: usize,
-    k2: usize,
-) -> Result<(BigUint, BigUint), BoxedBytes> {
-    if k1 >= k2 {
-        return Result::Err("quickselect lo > k".as_bytes().into());
-    }
-    if !(lo <= k1 && k1 <= hi) {
-        return Result::Err("quickselect k1 out of bounds".as_bytes().into());
-    }
-    if !(lo <= k2 && k2 <= hi) {
-        return Result::Err("quickselect k2 out of bounds".as_bytes().into());
-    }
-
-    loop {
-        let pivot_idx = partition(list, lo, hi);
-        if k2 <= pivot_idx {
-            hi = pivot_idx;
-        } else if pivot_idx < k1 {
-            lo = pivot_idx + 1;
-        } else {
-            if !(k1 <= pivot_idx && pivot_idx < k2) {
-                return Result::Err(
-                    "quickselect k1 <= pivot_idx && pivot_idx < k2"
-                        .as_bytes()
-                        .into(),
-                );
-            }
-            let k1th = quickselect(list, lo, pivot_idx, k1)?;
-            let k2th = quickselect(list, pivot_idx + 1, hi, k2)?;
-            return Result::Ok((k1th, k2th));
-        }
-    }
-}
-
-/// Partitions list in-place using Hoare's partitioning scheme.
-/// Only elements of list between indices lo and hi (inclusive) will be modified.
-/// Returns an index i, such that:
-/// - lo <= i < hi
-/// - forall j in [lo, i]. list[j] <= list[i]
-/// - forall j in [i, hi]. list[i] <= list[j]
-fn partition<BigUint: BigUintApi>(list: &mut Vec<BigUint>, mut lo: usize, mut hi: usize) -> usize {
-    // We don't care about overflow of the addition, because it would require a list
-    // larger than any feasible computer's memory.
-    let pivot = list[(lo + hi) / 2].clone();
-    loop {
-        while list[lo] < pivot {
-            lo += 1;
-        }
-        while list[hi] > pivot {
-            hi -= 1;
-        }
-        if lo < hi {
-            (list[lo], list[hi]) = (list[hi].clone(), list[lo].clone());
-        } else {
-            // Let orig_lo and orig_hi be the original values of lo and hi passed to partition.
-            // Then, hi < orig_hi, because hi decreases *strictly* monotonically
-            // in each loop iteration and
-            // - either list[orig_hi] > pivot, in which case the first loop iteration
-            //   will achieve hi < orig_hi;
-            // - or list[orig_hi] <= pivot, in which case at least two loop iterations are
-            //   needed:
-            //   - lo will have to stop at least once in the interval
-            //     [orig_lo, (orig_lo + orig_hi)/2]
-            //   - (orig_lo + orig_hi)/2 < orig_hi
-            return hi;
-        }
+        let median = list.get(middle_index).ok_or("median invalid index")?;
+        Result::Ok(Some(median.clone()))
     }
 }

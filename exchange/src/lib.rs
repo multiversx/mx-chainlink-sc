@@ -5,6 +5,8 @@ elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
 extern crate aggregator;
+use elrond_wasm::require;
+
 use crate::aggregator::aggregator_interface::{
     AggregatorInterface, AggregatorInterfaceProxy, Round,
 };
@@ -186,20 +188,33 @@ pub trait EgldEsdtExchange {
 
     fn try_convert(
         &self,
-        result: AsyncCallResult<Round<BigUint>>,
+        result: AsyncCallResult<OptionalArg<Round<BigUint>>>,
         payment: &BigUint,
         source_token: &TokenIdentifier,
         target_token: &TokenIdentifier,
     ) -> Result<(BigUint, BoxedBytes), BoxedBytes> {
         match result {
-            AsyncCallResult::Ok(round) => {
+            AsyncCallResult::Ok(optional_result_round) => {
+                let option_round = match optional_result_round {
+                    OptionalArg::Some(round) => Some(round),
+                    OptionalArg::None => None,
+                };
+                let error_message: BoxedBytes = b"no round data"[..].into();
+                let round = option_round.ok_or(error_message)?;
+                let error_message: BoxedBytes = b"no aggregator data"[..].into();
+                let submission = round.answer.ok_or(error_message)?;
+                if submission.values.len() != 1 {
+                    let error_message: BoxedBytes = b"invalid aggregator data format"[..].into();
+                    return Result::Err(error_message);
+                }
+                let exchange_rate = &submission.values[0];
                 let reverse_exchange =
                     self.check_aggregator_tokens(round.description, source_token, target_token)?;
                 let (converted_amount, conversion_message) = self.get_converted_sum(
                     payment,
                     source_token,
                     target_token,
-                    &round.answer,
+                    exchange_rate,
                     round.decimals as usize,
                     reverse_exchange,
                 )?;
@@ -226,7 +241,7 @@ pub trait EgldEsdtExchange {
     #[callback]
     fn finalize_exchange(
         &self,
-        #[call_result] result: AsyncCallResult<Round<BigUint>>,
+        #[call_result] result: AsyncCallResult<OptionalArg<Round<BigUint>>>,
         caller: Address,
         payment: BigUint,
         source_token: TokenIdentifier,
