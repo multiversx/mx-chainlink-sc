@@ -115,7 +115,7 @@
                 "status": "0",
                 "message": "",
                 "out": [
-                    "u64:0|u8:0|u8:1|u32:10|str:price feed|u64:400|u64:400|u64:0"
+                    "u64:0|u8:0|u8:1|nested:str:price feed|u64:400|u64:400|u64:0"
                 ],
                 "gas": "*",
                 "refund": "*"
@@ -160,7 +160,7 @@
                 "status": "0",
                 "message": "",
                 "out": [
-                    "u64:1|u8:1|u32:1|biguint:62|u8:1|u32:10|str:price feed|u64:400|u64:400|u64:1"
+                    "u64:1|u8:1|u32:1|biguint:62|u8:1|nested:str:price feed|u64:400|u64:400|u64:1"
                 ],
                 "gas": "*",
                 "refund": "*"
@@ -291,6 +291,81 @@
                     "storage": {},
                     "code": ""
                 },
+                "address:oracle2_owner": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:oracle3_owner": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:oracle1_smart_contract": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {
+                        "``authorized_nodes.node_id|address:authorized_oracle_node": "1",
+                        "``authorized_nodes.info": "u32:1|u32:1|u32:1|u32:1",
+                        "``authorized_nodes.node_links|u32:1": "u32:0|u32:0",
+                        "``authorized_nodes.value|u32:1": "address:authorized_oracle_node"
+                    },
+                    "code": "*"
+                },
+                "address:oracle2_smart_contract": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": "*"
+                },
+                "address:aggregator_owner": {
+                    "nonce": "*",
+                    "balance": "999,994,000,000",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:authorized_oracle_node": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:client1_owner": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:client2_owner": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:client1_smart_contract": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {
+                        "``oracle_address": "address:oracle1_smart_contract"
+                    },
+                    "code": "*"
+                },
+                "address:client2_smart_contract": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {
+                        "``oracle_address": "address:oracle2_smart_contract"
+                    },
+                    "code": "*"
+                },
+                "address:requester": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
                 "address:aggregator_smart_contract": {
                     "nonce": "*",
                     "balance": "5,000,000",
@@ -346,7 +421,7 @@
                         "``requesters.node_id|address:requester": "1",
                         "``requesters.mapped|address:requester": "1|u64:0|u64:1"
                     },
-                    "code": ""
+                    "code": "*"
                 }
             }
         },

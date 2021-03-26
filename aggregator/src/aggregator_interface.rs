@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
@@ -20,6 +22,6 @@ pub struct Round<BigUint: BigUintApi> {
 #[elrond_wasm_derive::callable(AggregatorInterfaceProxy)]
 pub trait AggregatorInterface<BigUint: BigUintApi> {
     fn submit(&self, round_id: u64, submission: BigUint) -> ContractCall<BigUint, ()>;
-    fn get_round_data(&self, round_id: u64) -> ContractCall<BigUint, ()>; // OptionalArg<Round<BigUint>>
-    fn latest_round_data(&self) -> ContractCall<BigUint, ()>; // OptionalArg<Round<BigUint>>
+    fn getRoundData(&self, round_id: u64) -> ContractCall<BigUint, OptionalArg<Round<BigUint>>>;
+    fn latestRoundData(&self) -> ContractCall<BigUint, OptionalArg<Round<BigUint>>>;
 }

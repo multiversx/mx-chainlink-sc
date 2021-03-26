@@ -87,7 +87,7 @@ pub trait EgldEsdtExchange {
 
         Ok(
             contract_call!(self, self.aggregator().get(), AggregatorInterfaceProxy)
-                .latest_round_data()
+                .latestRoundData()
                 .async_call()
                 .with_callback(self.callbacks().finalize_exchange(
                     self.get_caller(),

@@ -43,11 +43,6 @@
                     "nonce": "0",
                     "balance": "0",
                     "storage": {}
-                },
-                "address:unauthorized_oracle_node": {
-                    "nonce": "0",
-                    "balance": "0",
-                    "storage": {}
                 }
             },
             "newAddresses": [
@@ -93,7 +88,7 @@
                 "contractCode": "file:../oracle/output/oracle.wasm",
                 "value": "0",
                 "arguments": [],
-                "gasLimit": "1,000,000",
+                "gasLimit": "1,000,000,000",
                 "gasPrice": "0"
             },
             "expect": {
@@ -110,7 +105,7 @@
                 "contractCode": "file:../oracle/output/oracle.wasm",
                 "value": "0",
                 "arguments": [],
-                "gasLimit": "1,000,000",
+                "gasLimit": "1,000,000,000",
                 "gasPrice": "0"
             },
             "expect": {
@@ -149,7 +144,7 @@
                 "arguments": [
                     "address:oracle1_smart_contract"
                 ],
-                "gasLimit": "1,000,000",
+                "gasLimit": "1,000,000,000",
                 "gasPrice": "0"
             },
             "expect": {
@@ -168,7 +163,7 @@
                 "arguments": [
                     "address:oracle2_smart_contract"
                 ],
-                "gasLimit": "1,000,000",
+                "gasLimit": "1,000,000,000",
                 "gasPrice": "0"
             },
             "expect": {
@@ -194,7 +189,7 @@
                     "str:price feed",
                     "1"
                 ],
-                "gasLimit": "1,000,000",
+                "gasLimit": "1,000,000,000",
                 "gasPrice": "0"
             },
             "expect": {
