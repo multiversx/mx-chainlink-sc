@@ -58,7 +58,7 @@ pub trait Oracle {
     ) -> SCResult<()> {
         let caller = self.get_caller();
         let mut requests = self.requests();
-        let mut caller_requests = requests.get_or_insert_default(caller.clone());
+        let mut caller_requests = requests.entry(caller.clone()).or_default().get();
 
         // Ensure there isn't already the same nonce
         if caller_requests.contains_key(&nonce) {
