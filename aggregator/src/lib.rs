@@ -173,6 +173,8 @@ pub trait Aggregator<BigUint: BigUintApi> {
         max_submissions: u64,
         restart_delay: u64,
     ) -> SCResult<()> {
+        only_owner!(self, "Only owner may call this function!");
+
         for oracle in removed.iter() {
             self.oracles().remove(oracle);
         }
