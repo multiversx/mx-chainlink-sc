@@ -11,7 +11,7 @@ elrond_wasm::derive_imports!();
 
 #[elrond_wasm_derive::callable(ClientInterfaceProxy)]
 pub trait ClientInterface<BigUint: BigIntApi> {
-    fn reply(&self, nonce: u64, answer: BoxedBytes) -> ContractCall<BigUint>;
+    fn reply(&self, nonce: u64, answer: BoxedBytes) -> ContractCall<BigUint, ()>;
 }
 
 #[elrond_wasm_derive::contract(OracleImpl)]
@@ -58,7 +58,7 @@ pub trait Oracle {
     ) -> SCResult<()> {
         let caller = self.get_caller();
         let mut requests = self.requests();
-        let mut caller_requests = requests.get_or_insert_default(caller.clone());
+        let mut caller_requests = requests.entry(caller.clone()).or_default().get();
 
         // Ensure there isn't already the same nonce
         if caller_requests.contains_key(&nonce) {

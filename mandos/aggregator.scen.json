@@ -70,7 +70,7 @@
                 "status": "0",
                 "message": "",
                 "out": [
-                    "u8:1|u64:1|biguint:0|u64:400|u64:1000|biguint:6,000,000|u64:3|biguint:1,000,000"
+                    "u8:1|u64:1|u8:0|u64:400|u64:1000|biguint:6,000,000|u64:3|biguint:1,000,000"
                 ],
                 "gas": "*",
                 "refund": "*"
@@ -115,7 +115,7 @@
                 "status": "0",
                 "message": "",
                 "out": [
-                    "u64:0|biguint:0|u8:1|u32:10|str:price feed|u64:400|u64:400|u64:0"
+                    "u64:0|u8:0|u8:1|nested:str:price feed|u64:400|u64:400|u64:0"
                 ],
                 "gas": "*",
                 "refund": "*"
@@ -160,7 +160,7 @@
                 "status": "0",
                 "message": "",
                 "out": [
-                    "u64:1|biguint:62|u8:1|u32:10|str:price feed|u64:400|u64:400|u64:1"
+                    "u64:1|u8:1|u32:1|biguint:62|u8:1|nested:str:price feed|u64:400|u64:400|u64:1"
                 ],
                 "gas": "*",
                 "refund": "*"
@@ -291,6 +291,81 @@
                     "storage": {},
                     "code": ""
                 },
+                "address:oracle2_owner": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:oracle3_owner": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:oracle1_smart_contract": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {
+                        "``authorized_nodes.node_id|address:authorized_oracle_node": "1",
+                        "``authorized_nodes.info": "u32:1|u32:1|u32:1|u32:1",
+                        "``authorized_nodes.node_links|u32:1": "u32:0|u32:0",
+                        "``authorized_nodes.value|u32:1": "address:authorized_oracle_node"
+                    },
+                    "code": "*"
+                },
+                "address:oracle2_smart_contract": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": "*"
+                },
+                "address:aggregator_owner": {
+                    "nonce": "*",
+                    "balance": "999,994,000,000",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:authorized_oracle_node": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:client1_owner": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:client2_owner": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:client1_smart_contract": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {
+                        "``oracle_address": "address:oracle1_smart_contract"
+                    },
+                    "code": "*"
+                },
+                "address:client2_smart_contract": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {
+                        "``oracle_address": "address:oracle2_smart_contract"
+                    },
+                    "code": "*"
+                },
+                "address:requester": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
                 "address:aggregator_smart_contract": {
                     "nonce": "*",
                     "balance": "5,000,000",
@@ -317,14 +392,15 @@
                         "``rounds.value|u32:2": "1",
                         "``rounds.node_id|0": "1",
                         "``rounds.node_id|1": "2",
-                        "``rounds.mapped|0": "u64:0|biguint:0|u8:1|u32:10|str:price feed|u64:400|u64:400|u64:0",
-                        "``rounds.mapped|1": "u64:1|biguint:62|u8:1|u32:10|str:price feed|u64:400|u64:400|u64:1",
+                        "``rounds.mapped|0": "u64:0|u8:0|u8:1|u32:10|str:price feed|u64:400|u64:400|u64:0",
+                        "``rounds.mapped|1": "u64:1|u8:1|u32:1|biguint:62|u8:1|u32:10|str:price feed|u64:400|u64:400|u64:1",
                         "``details.info": "u32:1|u32:1|u32:1|u32:1",
                         "``details.node_links|u32:1": "u32:0|u32:0",
                         "``details.value|u32:1": "1",
                         "``details.node_id|1": "1",
-                        "``details.mapped|1": "u32:2|biguint:60|biguint:65|u64:3|u64:2|u64:1000|biguint:1,000,000",
+                        "``details.mapped|1": "u32:2|u32:1|biguint:60|u32:1|biguint:65|u64:3|u64:2|u64:1000|biguint:1,000,000",
                         "``description": "``price feed",
+                        "``values_count": "1",
                         "``reporting_round_id": "1",
                         "``oracles.info": "u32:3|u32:1|u32:3|u32:3",
                         "``oracles.node_links|u32:1": "u32:0|u32:2",
@@ -336,16 +412,16 @@
                         "``oracles.node_id|address:oracle1_smart_contract": "1",
                         "``oracles.node_id|address:oracle2_smart_contract": "2",
                         "``oracles.node_id|address:oracle3_smart_contract": "3",
-                        "``oracles.mapped|address:oracle1_smart_contract": "biguint:0|u64:1|u64:0xffffffffffffffff|u64:1|u64:0|biguint:60|address:oracle1_owner|u8:0",
-                        "``oracles.mapped|address:oracle2_smart_contract": "biguint:1,000,000|u64:1|u64:0xffffffffffffffff|u64:1|u64:0|biguint:65|address:oracle2_owner|u8:0",
-                        "``oracles.mapped|address:oracle3_smart_contract": "biguint:0|u64:1|u64:0xffffffffffffffff|u64:0|u64:0|biguint:0|address:oracle3_owner|u8:0",
+                        "``oracles.mapped|address:oracle1_smart_contract": "biguint:0|u64:1|u64:0xffffffffffffffff|u64:1|u64:0|u8:1|u32:1|biguint:60|address:oracle1_owner|u8:0",
+                        "``oracles.mapped|address:oracle2_smart_contract": "biguint:1,000,000|u64:1|u64:0xffffffffffffffff|u64:1|u64:0|u8:1|u32:1|biguint:65|address:oracle2_owner|u8:0",
+                        "``oracles.mapped|address:oracle3_smart_contract": "biguint:0|u64:1|u64:0xffffffffffffffff|u64:0|u64:0|u8:0|address:oracle3_owner|u8:0",
                         "``requesters.info": "u32:1|u32:1|u32:1|u32:1",
                         "``requesters.node_links|u32:1": "u32:0|u32:0",
                         "``requesters.value|u32:1": "address:requester",
                         "``requesters.node_id|address:requester": "1",
                         "``requesters.mapped|address:requester": "1|u64:0|u64:1"
                     },
-                    "code": ""
+                    "code": "*"
                 }
             }
         },

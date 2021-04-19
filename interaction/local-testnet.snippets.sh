@@ -101,7 +101,7 @@ call_sc_address() {
 }
 
 # example calls:
-# call_sc exchange eve eve --function get_latest_data
+# call_sc exchange eve eve --function latestRoundData
 
 call_sc() {
     local CONTRACT_NAME=$1

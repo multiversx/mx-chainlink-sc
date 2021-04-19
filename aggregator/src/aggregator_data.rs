@@ -1,9 +1,11 @@
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
+pub use crate::aggregator_interface::Submission;
+
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct RoundDetails<BigUint: BigUintApi> {
-    pub submissions: Vec<BigUint>,
+    pub submissions: Vec<Submission<BigUint>>,
     pub max_submissions: u64,
     pub min_submissions: u64,
     pub timeout: u64,
@@ -17,7 +19,7 @@ pub struct OracleStatus<BigUint: BigUintApi> {
     pub ending_round: u64,
     pub last_reported_round: u64,
     pub last_started_round: u64,
-    pub latest_submission: BigUint,
+    pub latest_submission: Option<Submission<BigUint>>,
     pub admin: Address,
     pub pending_admin: Option<Address>,
 }
@@ -39,7 +41,7 @@ pub struct Funds<BigUint: BigUintApi> {
 pub struct OracleRoundState<BigUint: BigUintApi> {
     pub eligible_to_submit: bool,
     pub round_id: u64,
-    pub latest_submission: BigUint,
+    pub latest_submission: Option<Submission<BigUint>>,
     pub started_at: u64,
     pub timeout: u64,
     pub available_funds: BigUint,
