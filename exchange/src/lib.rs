@@ -1,5 +1,4 @@
 #![no_std]
-#![feature(assoc_char_funcs)]
 
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
@@ -90,7 +89,7 @@ pub trait EgldEsdtExchange {
                 .latestRoundData()
                 .async_call()
                 .with_callback(self.callbacks().finalize_exchange(
-                    self.get_caller(),
+                    self.blockchain().get_caller(),
                     payment,
                     source_token,
                     target_token,

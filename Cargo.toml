@@ -21,18 +21,18 @@ path = "aggregator"
 path = "exchange"
 
 [dependencies.elrond-wasm]
-version = "0.14.1"
+version = "0.15.0"
 path="../elrond-wasm-rs/elrond-wasm"
 
 [dependencies.elrond-wasm-derive]
-version = "0.14.1"
+version = "0.15.0"
 path="../elrond-wasm-rs/elrond-wasm-derive"
 
 [dependencies.elrond-wasm-node]
-version = "0.14.1"
+version = "0.15.0"
 optional = true
 path="../elrond-wasm-rs/elrond-wasm-node"
 
 [dev-dependencies.elrond-wasm-debug]
-version = "0.14.1"
+version = "0.15.0"
 path="../elrond-wasm-rs/elrond-wasm-debug"

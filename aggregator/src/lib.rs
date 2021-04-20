@@ -110,7 +110,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         require!(token == self.token_id().get(), "Wrong token type");
         self.recorded_funds()
             .update(|recorded_funds| recorded_funds.available += &payment);
-        let caller = &self.get_caller();
+        let caller = &self.blockchain().get_caller();
         let deposit = self.get_deposit(caller) + payment;
         self.set_deposit(caller, &deposit);
         Ok(())
@@ -152,7 +152,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
             submission_values.len() == self.values_count().get(),
             "incorrect number of values in submission"
         );
-        sc_try!(self.validate_oracle_round(&self.get_caller(), &round_id));
+        sc_try!(self.validate_oracle_round(&self.blockchain().get_caller(), &round_id));
         let values = submission_values.into_vec();
         sc_try!(self.validate_submission_limits(&values));
         sc_try!(self.oracle_initialize_new_round(round_id));
@@ -293,7 +293,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
     ) -> SCResult<()> {
         let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
         require!(
-            oracle_status.admin == self.get_caller(),
+            oracle_status.admin == self.blockchain().get_caller(),
             "only callable by admin"
         );
 
@@ -314,13 +314,13 @@ pub trait Aggregator<BigUint: BigUintApi> {
 
     #[view(withdrawableAddedFunds)]
     fn withdrawable_added_funds(&self) -> BigUint {
-        self.get_deposit(&self.get_caller())
+        self.get_deposit(&self.blockchain().get_caller())
     }
 
     #[endpoint(withdrawFunds)]
     fn withdraw_funds(&self, amount: BigUint) -> SCResult<()> {
         let recorded_funds = self.recorded_funds().get();
-        let caller = &self.get_caller();
+        let caller = &self.blockchain().get_caller();
         let deposit = self.get_deposit(caller);
         require!(amount <= deposit, "Insufficient funds to withdraw");
         require!(
@@ -346,7 +346,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
     fn transfer_admin(&self, oracle: Address, new_admin: Address) -> SCResult<()> {
         let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
         require!(
-            oracle_status.admin == self.get_caller(),
+            oracle_status.admin == self.blockchain().get_caller(),
             "only callable by admin"
         );
         oracle_status.pending_admin = Some(new_admin);
@@ -357,7 +357,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
     #[endpoint(acceptAdmin)]
     fn accept_admin(&self, oracle: Address) -> SCResult<()> {
         let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
-        let caller = self.get_caller();
+        let caller = self.blockchain().get_caller();
         require!(
             oracle_status.pending_admin == Some(caller.clone()),
             "only callable by pending admin"
@@ -370,7 +370,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
 
     #[endpoint(requestNewRound)]
     fn request_new_round(&self) -> SCResult<u64> {
-        let requester_option = self.requesters().get(&self.get_caller());
+        let requester_option = self.requesters().get(&self.blockchain().get_caller());
         require!(
             requester_option.map_or_else(|| false, |requester| requester.authorized),
             "not authorized requester"
@@ -457,8 +457,8 @@ pub trait Aggregator<BigUint: BigUintApi> {
                 answer: None,
                 decimals: self.decimals().get(),
                 description: self.description().get(),
-                started_at: self.get_block_timestamp(),
-                updated_at: self.get_block_timestamp(),
+                started_at: self.blockchain().get_block_timestamp(),
+                updated_at: self.blockchain().get_block_timestamp(),
                 answered_in_round: 0,
             },
         );
@@ -479,7 +479,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         if !self.new_round(&round_id) {
             return Ok(());
         }
-        let oracle = self.get_caller();
+        let oracle = self.blockchain().get_caller();
         let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
         let restart_delay = self.restart_delay().get();
         if round_id <= oracle_status.last_started_round + restart_delay
@@ -496,7 +496,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
     }
 
     fn requester_initialize_new_round(&self, round_id: u64) -> SCResult<()> {
-        let requester_address = self.get_caller();
+        let requester_address = self.blockchain().get_caller();
         let mut requester = sc_try!(self.get_requester(&requester_address));
 
         if !self.new_round(&round_id) {
@@ -529,7 +529,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
             round.answer = None;
             round.answered_in_round = 0;
         }
-        round.updated_at = self.get_block_timestamp();
+        round.updated_at = self.blockchain().get_block_timestamp();
         self.rounds().insert(round_id, round);
         self.details().remove(&round_id);
         Ok(())
@@ -613,7 +613,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
             Result::Ok(new_answer) => {
                 let mut round = sc_try!(self.get_round(&round_id));
                 round.answer = new_answer;
-                round.updated_at = self.get_block_timestamp();
+                round.updated_at = self.blockchain().get_block_timestamp();
                 round.answered_in_round = round_id;
                 self.rounds().insert(round_id, round);
                 self.latest_round_id().set(&round_id);
@@ -645,7 +645,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
 
     fn pay_oracle(&self, round_id: u64) -> SCResult<()> {
         let round_details = sc_try!(self.get_round_details(&round_id));
-        let oracle = self.get_caller();
+        let oracle = self.blockchain().get_caller();
         let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
 
         let payment = round_details.payment_amount;
@@ -667,7 +667,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         );
 
         let mut round_details = sc_try!(self.get_round_details(&round_id));
-        let oracle = self.get_caller();
+        let oracle = self.blockchain().get_caller();
         let mut oracle_status = sc_try!(self.get_oracle_status_result(&oracle));
         round_details.submissions.push(submission.clone());
         oracle_status.last_reported_round = round_id;
@@ -694,7 +694,7 @@ pub trait Aggregator<BigUint: BigUintApi> {
         Ok(round_id == &0
             || (started_at > 0
                 && round_timeout > 0
-                && started_at + round_timeout < self.get_block_timestamp()))
+                && started_at + round_timeout < self.blockchain().get_block_timestamp()))
     }
 
     fn get_starting_round(&self, oracle: &Address) -> u64 {
