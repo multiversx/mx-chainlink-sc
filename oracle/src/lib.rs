@@ -56,7 +56,7 @@ pub trait Oracle {
         nonce: u64,
         data: BoxedBytes,
     ) -> SCResult<()> {
-        let caller = self.get_caller();
+        let caller = self.blockchain().get_caller();
         let mut requests = self.requests();
         let mut caller_requests = requests.entry(caller.clone()).or_default().get();
 
@@ -146,7 +146,8 @@ pub trait Oracle {
 
     fn only_authorized_node(&self) -> SCResult<()> {
         require!(
-            self.authorized_nodes().contains(&self.get_caller()),
+            self.authorized_nodes()
+                .contains(&self.blockchain().get_caller()),
             "Not an authorized node to fulfill requests."
         );
         Ok(())

@@ -50,7 +50,7 @@ pub trait Client<BigUint: BigUintApi> {
     #[endpoint(sendRequest)]
     fn send_request(&self) -> SCResult<AsyncCall<BigUint>> {
         only_owner!(self, "Caller must be owner");
-        let callback_address = self.get_sc_address();
+        let callback_address = self.blockchain().get_sc_address();
         let callback_method = BoxedBytes::from(&b"reply"[..]);
         let nonce = self.nonce().get();
         self.nonce().update(|nonce| *nonce += 1);
@@ -64,7 +64,7 @@ pub trait Client<BigUint: BigUintApi> {
     #[endpoint(reply)]
     fn reply(&self, nonce: u64, answer: BoxedBytes) -> SCResult<()> {
         require!(
-            self.get_caller() == self.get_oracle_address(),
+            self.blockchain().get_caller() == self.get_oracle_address(),
             "Only oracle can reply"
         );
         self.client_data().set(&ClientData { nonce, answer });
