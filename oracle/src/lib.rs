@@ -56,9 +56,16 @@ pub trait Oracle {
         nonce: u64,
         data: BoxedBytes,
     ) -> SCResult<()> {
-        let caller = self.get_caller();
+        let caller = self.blockchain().get_caller();
         let mut requests = self.requests();
-        let mut caller_requests = requests.get_or_insert_default(caller.clone());
+        let mut caller_requests = match requests.get(&caller) {
+            Some(req) => req,
+            None => {
+                requests.insert_default(caller.clone());
+
+                requests.get(&caller).unwrap()
+            }
+        };
 
         // Ensure there isn't already the same nonce
         if caller_requests.contains_key(&nonce) {
@@ -146,7 +153,7 @@ pub trait Oracle {
 
     fn only_authorized_node(&self) -> SCResult<()> {
         require!(
-            self.authorized_nodes().contains(&self.get_caller()),
+            self.authorized_nodes().contains(&self.blockchain().get_caller()),
             "Not an authorized node to fulfill requests."
         );
         Ok(())
