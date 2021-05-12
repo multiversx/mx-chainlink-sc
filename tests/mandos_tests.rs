@@ -1,7 +1,3 @@
-use aggregator::AggregatorImpl;
-use client::ClientImpl;
-use oracle::OracleImpl;
-
 use elrond_wasm::*;
 use elrond_wasm_debug::*;
 
@@ -9,15 +5,19 @@ fn contract_map() -> ContractMap<TxContext> {
     let mut contract_map = ContractMap::new();
     contract_map.register_contract(
         "file:../client/output/client.wasm",
-        Box::new(|context| Box::new(ClientImpl::new(context))),
+        Box::new(|context| Box::new(client::contract_obj(context))),
     );
     contract_map.register_contract(
         "file:../oracle/output/oracle.wasm",
-        Box::new(|context| Box::new(OracleImpl::new(context))),
+        Box::new(|context| Box::new(oracle::contract_obj(context))),
     );
     contract_map.register_contract(
         "file:../aggregator/output/aggregator.wasm",
-        Box::new(|context| Box::new(AggregatorImpl::new(context))),
+        Box::new(|context| Box::new(aggregator::contract_obj(context))),
+    );
+    contract_map.register_contract(
+        "file:../price-aggregator/output/price-aggregator.wasm",
+        Box::new(|context| Box::new(price_aggregator::contract_obj(context))),
     );
     contract_map
 }
@@ -36,3 +36,10 @@ fn client_request() {
 fn aggregator() {
     parse_execute_mandos("mandos/aggregator.scen.json", &contract_map());
 }
+
+/*
+#[test]
+fn price_aggregator() {
+    parse_execute_mandos("mandos/price-aggregator.scen.json", &contract_map());
+}
+*/

@@ -6,9 +6,7 @@ elrond_wasm::derive_imports!();
 extern crate aggregator;
 use elrond_wasm::require;
 
-use crate::aggregator::aggregator_interface::{
-    AggregatorInterface, AggregatorInterfaceProxy, Round,
-};
+use crate::aggregator::aggregator_interface::Round;
 
 #[macro_use]
 extern crate alloc;
@@ -46,7 +44,7 @@ pub fn format_fixed_precision<BigUint: BigUintApi>(number: &BigUint, decimals: u
     left.chain(dot).chain(right).cloned().collect()
 }
 
-#[elrond_wasm_derive::contract(EgldEsdtExchangeImpl)]
+#[elrond_wasm_derive::contract]
 pub trait EgldEsdtExchange {
     #[init]
     fn init(&self, aggregator: Address) {
@@ -57,7 +55,7 @@ pub trait EgldEsdtExchange {
     #[endpoint(deposit)]
     fn deposit(
         &self,
-        #[payment] payment: BigUint,
+        #[payment] payment: Self::BigUint,
         #[payment_token] payment_token: TokenIdentifier,
     ) -> SCResult<()> {
         only_owner!(self, "Only the owner can deposit tokens");
@@ -69,10 +67,10 @@ pub trait EgldEsdtExchange {
     #[endpoint(exchange)]
     fn exchange(
         &self,
-        #[payment] payment: BigUint,
+        #[payment] payment: Self::BigUint,
         #[payment_token] source_token: TokenIdentifier,
         target_token: TokenIdentifier,
-    ) -> SCResult<AsyncCall<BigUint>> {
+    ) -> SCResult<AsyncCall<Self::SendApi>> {
         require!(payment > 0, "Payment must be more than 0");
         require!(
             self.balance().contains_key(&source_token),
@@ -84,17 +82,16 @@ pub trait EgldEsdtExchange {
         );
         self.increase_balance(&source_token, &payment);
 
-        Ok(
-            contract_call!(self, self.aggregator().get(), AggregatorInterfaceProxy)
-                .latestRoundData()
-                .async_call()
-                .with_callback(self.callbacks().finalize_exchange(
-                    self.blockchain().get_caller(),
-                    payment,
-                    source_token,
-                    target_token,
-                )),
-        )
+        Ok(self
+            .aggregator_interface_proxy(self.aggregator().get())
+            .latest_round_data()
+            .async_call()
+            .with_callback(self.callbacks().finalize_exchange(
+                self.blockchain().get_caller(),
+                payment,
+                source_token,
+                target_token,
+            )))
     }
 
     fn check_aggregator_tokens(
@@ -128,15 +125,15 @@ pub trait EgldEsdtExchange {
 
     fn convert(
         &self,
-        amount: &BigUint,
+        amount: &Self::BigUint,
         source_token: &TokenIdentifier,
         target_token: &TokenIdentifier,
-        multiplier: &BigUint,
-        divisor: &BigUint,
-        precision_factor: &BigUint,
+        multiplier: &Self::BigUint,
+        divisor: &Self::BigUint,
+        precision_factor: &Self::BigUint,
         decimals: usize,
-    ) -> Result<(BigUint, BoxedBytes), BoxedBytes> {
-        if divisor == &BigUint::zero() {
+    ) -> Result<(Self::BigUint, BoxedBytes), BoxedBytes> {
+        if divisor == &Self::BigUint::zero() {
             return Result::Err("Convert - dividing by 0".as_bytes().into());
         }
         let converted_amount = amount * multiplier / divisor.clone();
@@ -154,14 +151,14 @@ pub trait EgldEsdtExchange {
 
     fn get_converted_sum(
         &self,
-        payment: &BigUint,
+        payment: &Self::BigUint,
         source_token: &TokenIdentifier,
         target_token: &TokenIdentifier,
-        exchange_rate: &BigUint,
+        exchange_rate: &Self::BigUint,
         decimals: usize,
         reverse_exchange: bool,
-    ) -> Result<(BigUint, BoxedBytes), BoxedBytes> {
-        let precision_factor = BigUint::from(10u64.pow(decimals as u32));
+    ) -> Result<(Self::BigUint, BoxedBytes), BoxedBytes> {
+        let precision_factor = Self::BigUint::from(10u64.pow(decimals as u32));
         if !reverse_exchange {
             self.convert(
                 payment,
@@ -187,11 +184,11 @@ pub trait EgldEsdtExchange {
 
     fn try_convert(
         &self,
-        result: AsyncCallResult<OptionalArg<Round<BigUint>>>,
-        payment: &BigUint,
+        result: AsyncCallResult<OptionalArg<Round<Self::BigUint>>>,
+        payment: &Self::BigUint,
         source_token: &TokenIdentifier,
         target_token: &TokenIdentifier,
-    ) -> Result<(BigUint, BoxedBytes), BoxedBytes> {
+    ) -> Result<(Self::BigUint, BoxedBytes), BoxedBytes> {
         match result {
             AsyncCallResult::Ok(optional_result_round) => {
                 let option_round = match optional_result_round {
@@ -240,9 +237,9 @@ pub trait EgldEsdtExchange {
     #[callback]
     fn finalize_exchange(
         &self,
-        #[call_result] result: AsyncCallResult<OptionalArg<Round<BigUint>>>,
+        #[call_result] result: AsyncCallResult<OptionalArg<Round<Self::BigUint>>>,
         caller: Address,
-        payment: BigUint,
+        payment: Self::BigUint,
         source_token: TokenIdentifier,
         target_token: TokenIdentifier,
     ) {
@@ -269,7 +266,7 @@ pub trait EgldEsdtExchange {
         }
     }
 
-    fn increase_balance(&self, token_identifier: &TokenIdentifier, amount: &BigUint) {
+    fn increase_balance(&self, token_identifier: &TokenIdentifier, amount: &Self::BigUint) {
         let mut balance = self
             .balance()
             .get(&token_identifier)
@@ -281,7 +278,7 @@ pub trait EgldEsdtExchange {
     fn checked_decrease_balance(
         &self,
         token_identifier: &TokenIdentifier,
-        amount: &BigUint,
+        amount: &Self::BigUint,
     ) -> Result<(), BoxedBytes> {
         match self.balance().get(&token_identifier) {
             Some(balance) => {
@@ -306,7 +303,7 @@ pub trait EgldEsdtExchange {
         }
     }
 
-    fn decrease_balance(&self, token_identifier: &TokenIdentifier, amount: &BigUint) {
+    fn decrease_balance(&self, token_identifier: &TokenIdentifier, amount: &Self::BigUint) {
         let mut balance = self
             .balance()
             .get(&token_identifier)
@@ -317,11 +314,11 @@ pub trait EgldEsdtExchange {
 
     fn conversion_message(
         &self,
-        payment: &BigUint,
+        payment: &Self::BigUint,
         source_token: &TokenIdentifier,
-        rate: &BigUint,
+        rate: &Self::BigUint,
         rate_precision: usize,
-        converted_token: &BigUint,
+        converted_token: &Self::BigUint,
         target_token: &TokenIdentifier,
     ) -> Result<BoxedBytes, BoxedBytes> {
         Result::Ok(BoxedBytes::from_concat(&[
@@ -342,5 +339,8 @@ pub trait EgldEsdtExchange {
     fn aggregator(&self) -> SingleValueMapper<Self::Storage, Address>;
 
     #[storage_mapper("balance")]
-    fn balance(&self) -> MapMapper<Self::Storage, TokenIdentifier, BigUint>;
+    fn balance(&self) -> MapMapper<Self::Storage, TokenIdentifier, Self::BigUint>;
+
+    #[proxy]
+    fn aggregator_interface_proxy(&self, to: Address) -> aggregator::Proxy<Self::SendApi>;
 }

@@ -11,6 +11,9 @@ path = "src/lib.rs"
 [features]
 wasm-output-mode = [ "elrond-wasm-node",]
 
+[dependencies.oracle]
+path="../oracle"
+
 [dependencies.elrond-wasm]
 version = "0.15.0"
 path="../../elrond-wasm-rs/elrond-wasm"

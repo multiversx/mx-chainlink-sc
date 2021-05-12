@@ -1,7 +1,7 @@
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
-#[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
+#[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi, Clone)]
 pub struct TokenPair {
     pub from: BoxedBytes,
     pub to: BoxedBytes,
@@ -9,7 +9,7 @@ pub struct TokenPair {
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct PriceFeed<BigUint: BigUintApi> {
-    pub round_id: u64,
+    pub round_id: u32,
     pub from: BoxedBytes,
     pub to: BoxedBytes,
     pub price: BigUint,
@@ -20,10 +20,4 @@ pub struct PriceFeed<BigUint: BigUintApi> {
 pub struct OracleStatus {
     pub accepted_submissions: u64,
     pub total_submissions: u64,
-}
-
-#[derive(TopEncode, TopDecode, PartialEq, Clone, Copy)]
-pub struct Funds<BigUint: BigUintApi> {
-    pub available: BigUint,
-    pub allocated: BigUint,
 }
