@@ -37,9 +37,17 @@ fn aggregator() {
     parse_execute_mandos("mandos/aggregator.scen.json", &contract_map());
 }
 
-/*
+#[test]
+fn init_price_aggregator() {
+    parse_execute_mandos("mandos/init-price-aggregator.scen.json", &contract_map());
+}
+
 #[test]
 fn price_aggregator() {
     parse_execute_mandos("mandos/price-aggregator.scen.json", &contract_map());
 }
-*/
+
+#[test]
+fn price_aggregator_balance() {
+    parse_execute_mandos("mandos/price-aggregator-balance.scen.json", &contract_map());
+}

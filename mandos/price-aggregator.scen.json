@@ -1,0 +1,383 @@
+{
+    "name": "price aggregator tests",
+    "steps": [
+        {
+            "step": "externalSteps",
+            "path": "init-price-aggregator.scen.json"
+        },
+        {
+            "step": "scCall",
+            "txId": "1-deposit sufficient funds for 10 queries--",
+            "tx": {
+                "from": "address:user",
+                "to": "address:price_aggregator_smart_contract",
+                "value": "10,000",
+                "function": "deposit",
+                "arguments": [],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "message": "",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "2-submit - from oracle 1",
+            "tx": {
+                "from": "address:oracle1",
+                "to": "address:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "submit",
+                "arguments": [
+                    "str:EGLD",
+                    "str:USDT",
+                    "100,00"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "message": "",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "3-submit - from oracle 2",
+            "tx": {
+                "from": "address:oracle2",
+                "to": "address:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "submit",
+                "arguments": [
+                    "str:EGLD",
+                    "str:USDT",
+                    "110,00"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "message": "",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "4-submit - non-oracle can't submit",
+            "tx": {
+                "from": "address:user",
+                "to": "address:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "submit",
+                "arguments": [
+                    "str:EGLD",
+                    "str:USDT",
+                    "999,00"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "4",
+                "message": "str:only oracles allowed",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "checkState",
+            "accounts": {
+                "address:user": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:oracle1": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:oracle2": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:oracle3": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": "*"
+                },
+                "address:oracle4": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": "*"
+                },
+                "address:price_aggregator_smart_contract": {
+                    "nonce": "*",
+                    "balance": "10,000",
+                    "storage": {
+                        "``payment_token": "str:EGLD",
+                        "``decimals": "2",
+                        "``query_payment_amount": "1,000",
+                        "``submission_count": "3",
+                        "``balance.info": "u32:1|u32:1|u32:1|u32:1",
+                        "``balance.node_links|u32:1": "u32:0|u32:0",
+                        "``balance.value|u32:1": "address:user",
+                        "``balance.node_id|address:user": "1",
+                        "``balance.mapped|address:user": "10,000",
+                        "``oracle_status.info": "u32:4|u32:1|u32:4|u32:4",
+                        "``oracle_status.node_links|u32:1": "u32:0|u32:2",
+                        "``oracle_status.node_links|u32:2": "u32:1|u32:3",
+                        "``oracle_status.node_links|u32:3": "u32:2|u32:4",
+                        "``oracle_status.node_links|u32:4": "u32:3|u32:0",
+                        "``oracle_status.node_id|address:oracle1": "1",
+                        "``oracle_status.node_id|address:oracle2": "2",
+                        "``oracle_status.node_id|address:oracle3": "3",
+                        "``oracle_status.node_id|address:oracle4": "4",
+                        "``oracle_status.value|u32:1": "address:oracle1",
+                        "``oracle_status.value|u32:2": "address:oracle2",
+                        "``oracle_status.value|u32:3": "address:oracle3",
+                        "``oracle_status.value|u32:4": "address:oracle4",
+                        "``oracle_status.mapped|address:oracle1": "u64:1|u64:1",
+                        "``oracle_status.mapped|address:oracle2": "u64:1|u64:1",
+                        "``oracle_status.mapped|address:oracle3": "u64:0|u64:0",
+                        "``oracle_status.mapped|address:oracle4": "u64:0|u64:0",
+                        "``submissions.node_links|u32:1": "u32:0|u32:0",
+                        "``submissions.node_id|nested:str:EGLD|nested:str:USDT": "1",
+                        "``submissions.info": "u32:1|u32:1|u32:1|u32:1",
+                        "``submissions.value|u32:1": "nested:str:EGLD|nested:str:USDT",
+                        "``submissions.storage|nested:str:EGLD|nested:str:USDT|``.info": "u32:2|u32:1|u32:2|u32:2",
+                        "``submissions.storage|nested:str:EGLD|nested:str:USDT|``.node_links|u32:1": "u32:0|u32:2",
+                        "``submissions.storage|nested:str:EGLD|nested:str:USDT|``.node_links|u32:2": "u32:1|u32:0",
+                        "``submissions.storage|nested:str:EGLD|nested:str:USDT|``.node_id|address:oracle1": "1",
+                        "``submissions.storage|nested:str:EGLD|nested:str:USDT|``.node_id|address:oracle2": "2",
+                        "``submissions.storage|nested:str:EGLD|nested:str:USDT|``.value|u32:1": "address:oracle1",
+                        "``submissions.storage|nested:str:EGLD|nested:str:USDT|``.value|u32:2": "address:oracle2",
+                        "``submissions.storage|nested:str:EGLD|nested:str:USDT|``.mapped|address:oracle1": "100,00",
+                        "``submissions.storage|nested:str:EGLD|nested:str:USDT|``.mapped|address:oracle2": "110,00"
+                    },
+                    "code": "*"
+                }
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "5-submit - from oracle 3",
+            "tx": {
+                "from": "address:oracle3",
+                "to": "address:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "submit",
+                "arguments": [
+                    "str:EGLD",
+                    "str:USDT",
+                    "120,00"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "message": "",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "6-latestRoundData - after submitting twice the latest round data should be the median between the submitted values--",
+            "tx": {
+                "from": "address:user",
+                "to": "address:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "latestRoundData",
+                "arguments": [],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "message": "",
+                "out": [
+                    "u32:1|nested:str:EGLD|nested:str:USDT|biguint:110,00|u8:2"
+                ],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "7-myBalance - check that user's balance has decreased--",
+            "tx": {
+                "from": "address:user",
+                "to": "address:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "myBalance",
+                "arguments": [],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "message": "",
+                "out": [
+                    "9,000"
+                ],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "8-latestPriceFeed - check the price feed only for EGLD/USDT--",
+            "tx": {
+                "from": "address:user",
+                "to": "address:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "latestPriceFeed",
+                "arguments": [
+                    "str:EGLD",
+                    "str:USDT"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "message": "",
+                "out": [
+                    "1",
+                    "str:EGLD",
+                    "str:USDT",
+                    "110,00",
+                    "2"
+                ],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "9-myBalance - check that user's balance has decreased again--",
+            "tx": {
+                "from": "address:user",
+                "to": "address:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "myBalance",
+                "arguments": [],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "message": "",
+                "out": [
+                    "8,000"
+                ],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "checkState",
+            "accounts": {
+                "address:user": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:oracle1": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:oracle2": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": ""
+                },
+                "address:oracle3": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": "*"
+                },
+                "address:oracle4": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {},
+                    "code": "*"
+                },
+                "address:price_aggregator_smart_contract": {
+                    "nonce": "*",
+                    "balance": "10,000",
+                    "storage": {
+                        "``payment_token": "str:EGLD",
+                        "``decimals": "2",
+                        "``query_payment_amount": "1,000",
+                        "``submission_count": "3",
+                        "``balance.info": "u32:2|u32:1|u32:2|u32:2",
+                        "``balance.node_links|u32:1": "u32:0|u32:2",
+                        "``balance.node_links|u32:2": "u32:1|u32:0",
+                        "``balance.node_id|address:user": "1",
+                        "``balance.node_id|address:price_aggregator_smart_contract": "2",
+                        "``balance.value|u32:1": "address:user",
+                        "``balance.value|u32:2": "address:price_aggregator_smart_contract",
+                        "``balance.mapped|address:user": "8,000",
+                        "``balance.mapped|address:price_aggregator_smart_contract": "2,000",
+                        "``oracle_status.info": "u32:4|u32:1|u32:4|u32:4",
+                        "``oracle_status.node_links|u32:1": "u32:0|u32:2",
+                        "``oracle_status.node_links|u32:2": "u32:1|u32:3",
+                        "``oracle_status.node_links|u32:3": "u32:2|u32:4",
+                        "``oracle_status.node_links|u32:4": "u32:3|u32:0",
+                        "``oracle_status.node_id|address:oracle1": "1",
+                        "``oracle_status.node_id|address:oracle2": "2",
+                        "``oracle_status.node_id|address:oracle3": "3",
+                        "``oracle_status.node_id|address:oracle4": "4",
+                        "``oracle_status.value|u32:1": "address:oracle1",
+                        "``oracle_status.value|u32:2": "address:oracle2",
+                        "``oracle_status.value|u32:3": "address:oracle3",
+                        "``oracle_status.value|u32:4": "address:oracle4",
+                        "``oracle_status.mapped|address:oracle1": "u64:1|u64:1",
+                        "``oracle_status.mapped|address:oracle2": "u64:1|u64:1",
+                        "``oracle_status.mapped|address:oracle3": "u64:1|u64:1",
+                        "``oracle_status.mapped|address:oracle4": "u64:0|u64:0",
+                        "``submissions.node_links|u32:1": "u32:0|u32:0",
+                        "``submissions.node_id|nested:str:EGLD|nested:str:USDT": "1",
+                        "``submissions.info": "u32:1|u32:1|u32:1|u32:1",
+                        "``submissions.value|u32:1": "nested:str:EGLD|nested:str:USDT",
+                        "``rounds.info": "u32:1|u32:1|u32:1|u32:1",
+                        "``rounds.node_links|u32:1": "u32:0|u32:0",
+                        "``rounds.value|u32:1": "nested:str:EGLD|nested:str:USDT",
+                        "``rounds.node_id|nested:str:EGLD|nested:str:USDT": "1",
+                        "``rounds.storage|nested:str:EGLD|nested:str:USDT|``.item|u32:1": "110,00",
+                        "``rounds.storage|nested:str:EGLD|nested:str:USDT|``.len": "1"
+                    },
+                    "code": "*"
+                }
+            }
+        }
+    ]
+}

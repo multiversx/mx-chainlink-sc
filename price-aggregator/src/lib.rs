@@ -5,6 +5,7 @@ elrond_wasm::imports!();
 pub mod median;
 mod price_aggregator_data;
 
+use elrond_wasm::require;
 use price_aggregator_data::{OracleStatus, PriceFeed, TokenPair};
 
 #[elrond_wasm_derive::contract]
@@ -13,14 +14,24 @@ pub trait PriceAggregator {
     fn init(
         &self,
         payment_token: TokenIdentifier,
-        query_payment_amount: Self::BigUint,
+        oracles: Vec<Address>,
         submission_count: u32,
         decimals: u8,
+        query_payment_amount: Self::BigUint,
     ) -> SCResult<()> {
         self.payment_token().set(&payment_token);
         self.query_payment_amount().set(&query_payment_amount);
         self.submission_count().set(&submission_count);
         self.decimals().set(&decimals);
+        oracles.iter().for_each(|oracle| {
+            self.oracle_status().insert(
+                oracle.clone(),
+                OracleStatus {
+                    total_submissions: 0,
+                    accepted_submissions: 0,
+                },
+            );
+        });
         Ok(())
     }
 
@@ -52,7 +63,6 @@ pub trait PriceAggregator {
     }
 
     #[endpoint]
-    #[payable("*")]
     fn withdraw(&self, amount: Self::BigUint) -> SCResult<()> {
         let caller = self.blockchain().get_caller();
         self.subtract_balance(caller.clone(), &amount)?;
@@ -67,16 +77,35 @@ pub trait PriceAggregator {
         Ok(())
     }
 
-    #[endpoint(submit)]
+    #[endpoint]
     fn submit(&self, from: BoxedBytes, to: BoxedBytes, price: Self::BigUint) -> SCResult<()> {
+        self.require_is_oracle()?;
         let token_pair = TokenPair { from, to };
         let mut submissions = self
             .submissions()
             .entry(token_pair.clone())
             .or_default()
             .get();
-        submissions.insert(self.blockchain().get_caller(), price);
-        self.create_new_round(token_pair, submissions)
+        let accepted = submissions
+            .insert(self.blockchain().get_caller(), price)
+            .is_none();
+        self.oracle_status()
+            .entry(self.blockchain().get_caller())
+            .and_modify(|oracle_status| {
+                oracle_status.accepted_submissions += accepted as u64;
+                oracle_status.total_submissions += 1;
+            });
+        self.create_new_round(token_pair, submissions)?;
+        Ok(())
+    }
+
+    fn require_is_oracle(&self) -> SCResult<()> {
+        require!(
+            self.oracle_status()
+                .contains_key(&self.blockchain().get_caller()),
+            "only oracles allowed"
+        );
+        Ok(())
     }
 
     fn create_new_round(
@@ -84,7 +113,7 @@ pub trait PriceAggregator {
         token_pair: TokenPair,
         mut submissions: MapMapper<Self::Storage, Address, Self::BigUint>,
     ) -> SCResult<()> {
-        if submissions.len() as u32 > self.submission_count().get() {
+        if submissions.len() as u32 >= self.submission_count().get() {
             let price_feed =
                 median::calculate(submissions.values().collect())?.ok_or("no submissions")?;
             self.rounds()
@@ -110,6 +139,7 @@ pub trait PriceAggregator {
     #[view(latestRoundData)]
     fn latest_round_data(&self) -> SCResult<MultiResultVec<PriceFeed<Self::BigUint>>> {
         self.subtract_query_payment()?;
+        require!(!self.rounds().is_empty(), "no completed rounds");
         Ok(self
             .rounds()
             .iter()
@@ -122,14 +152,21 @@ pub trait PriceAggregator {
         &self,
         from: BoxedBytes,
         to: BoxedBytes,
-    ) -> SCResult<PriceFeed<Self::BigUint>> {
+    ) -> SCResult<MultiArg5<u32, BoxedBytes, BoxedBytes, Self::BigUint, u8>> {
         self.subtract_query_payment()?;
         let token_pair = TokenPair { from, to };
         let round_values = self
             .rounds()
             .get(&token_pair)
             .ok_or("token pair not found")?;
-        Ok(self.make_price_feed(token_pair, round_values))
+        let feed = self.make_price_feed(token_pair, round_values);
+        Ok(MultiArg5::from((
+            feed.round_id,
+            feed.from,
+            feed.to,
+            feed.price,
+            feed.decimals,
+        )))
     }
 
     fn make_price_feed(
@@ -160,14 +197,21 @@ pub trait PriceAggregator {
         self.oracle_status().keys().collect()
     }
 
+    #[view]
     #[storage_mapper("payment_token")]
     fn payment_token(&self) -> SingleValueMapper<Self::Storage, TokenIdentifier>;
 
+    #[view]
     #[storage_mapper("query_payment_amount")]
     fn query_payment_amount(&self) -> SingleValueMapper<Self::Storage, Self::BigUint>;
 
+    #[view]
     #[storage_mapper("submission_count")]
     fn submission_count(&self) -> SingleValueMapper<Self::Storage, u32>;
+
+    #[view]
+    #[storage_mapper("decimals")]
+    fn decimals(&self) -> SingleValueMapper<Self::Storage, u8>;
 
     #[storage_mapper("oracle_status")]
     fn oracle_status(&self) -> MapMapper<Self::Storage, Address, OracleStatus>;
@@ -184,8 +228,4 @@ pub trait PriceAggregator {
 
     #[storage_mapper("balance")]
     fn balance(&self) -> MapMapper<Self::Storage, Address, Self::BigUint>;
-
-    #[view]
-    #[storage_mapper("decimals")]
-    fn decimals(&self) -> SingleValueMapper<Self::Storage, u8>;
 }
