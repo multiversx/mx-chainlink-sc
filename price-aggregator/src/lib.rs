@@ -109,26 +109,50 @@ pub trait PriceAggregator {
 
     #[view(latestRoundData)]
     fn latest_round_data(&self) -> SCResult<MultiResultVec<PriceFeed<Self::BigUint>>> {
+        self.subtract_query_payment()?;
+        Ok(self
+            .rounds()
+            .iter()
+            .map(|(token_pair, round_values)| self.make_price_feed(token_pair, round_values))
+            .collect())
+    }
+
+    #[endpoint(latestPriceFeed)]
+    fn latest_price_feed(
+        &self,
+        from: BoxedBytes,
+        to: BoxedBytes,
+    ) -> SCResult<PriceFeed<Self::BigUint>> {
+        self.subtract_query_payment()?;
+        let token_pair = TokenPair { from, to };
+        let round_values = self
+            .rounds()
+            .get(&token_pair)
+            .ok_or("token pair not found")?;
+        Ok(self.make_price_feed(token_pair, round_values))
+    }
+
+    fn make_price_feed(
+        &self,
+        token_pair: TokenPair,
+        round_values: VecMapper<Self::Storage, Self::BigUint>,
+    ) -> PriceFeed<Self::BigUint> {
+        let round_id = round_values.len();
+        PriceFeed {
+            round_id: round_id as u32,
+            from: token_pair.from,
+            to: token_pair.to,
+            price: round_values.get(round_id),
+            decimals: self.decimals().get(),
+        }
+    }
+
+    fn subtract_query_payment(&self) -> SCResult<()> {
         self.transfer(
             self.blockchain().get_caller(),
             self.blockchain().get_sc_address(),
             &self.query_payment_amount().get(),
-        )?;
-        let decimals = self.decimals().get();
-        Ok(self
-            .rounds()
-            .iter()
-            .map(|(token_pair, round_values)| {
-                let round_id = round_values.len();
-                PriceFeed {
-                    round_id: round_id as u32,
-                    from: token_pair.from,
-                    to: token_pair.to,
-                    price: round_values.get(round_id),
-                    decimals,
-                }
-            })
-            .collect())
+        )
     }
 
     #[view(getOracles)]
