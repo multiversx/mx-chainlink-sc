@@ -5,7 +5,7 @@ elrond_wasm::imports!();
 pub mod median;
 mod price_aggregator_data;
 
-use elrond_wasm::require;
+use elrond_wasm::{only_owner, require};
 use price_aggregator_data::{OracleStatus, PriceFeed, TokenPair};
 
 #[elrond_wasm_derive::contract]
@@ -41,9 +41,13 @@ pub trait PriceAggregator {
         &self,
         #[payment] payment: Self::BigUint,
         #[payment_token] token: TokenIdentifier,
+        #[var_args] on_behalf_of: OptionalArg<Address>,
     ) -> SCResult<()> {
         require!(token == self.payment_token().get(), "wrong token type");
-        self.add_balance(self.blockchain().get_caller(), &payment);
+        let to = on_behalf_of
+            .into_option()
+            .unwrap_or_else(|| self.blockchain().get_caller());
+        self.add_balance(to, &payment);
         Ok(())
     }
 
@@ -167,6 +171,13 @@ pub trait PriceAggregator {
             feed.price,
             feed.decimals,
         )))
+    }
+
+    #[endpoint(setSubmissionCount)]
+    fn set_submission_count(&self, submission_count: u32) -> SCResult<()> {
+        only_owner!(self, "Caller must be owner");
+        self.submission_count().set(&submission_count);
+        Ok(())
     }
 
     fn make_price_feed(
