@@ -5,19 +5,8 @@ use client_data::ClientData;
 
 elrond_wasm::imports!();
 
-#[elrond_wasm_derive::callable(OracleInterfaceProxy)]
-pub trait OracleInterface {
-    fn request(
-        &self,
-        callback_address: Address,
-        callback_method: BoxedBytes,
-        nonce: u64,
-        data: BoxedBytes,
-    ) -> ContractCall<BigUint, ()>;
-}
-
-#[elrond_wasm_derive::contract(ClientImpl)]
-pub trait Client<BigUint: BigUintApi> {
+#[elrond_wasm_derive::contract]
+pub trait Client {
     #[storage_get("oracle_address")]
     fn get_oracle_address(&self) -> Address;
 
@@ -42,20 +31,23 @@ pub trait Client<BigUint: BigUintApi> {
     #[storage_set("client_data")]
     fn set_client_data(&self, user_data: ClientData);
 
+    #[proxy]
+    fn oracle_proxy(&self, to: Address) -> oracle::Proxy<Self::SendApi>;
+
     #[init]
     fn init(&self, oracle_address: Address) {
         self.set_oracle_address(oracle_address);
     }
 
     #[endpoint(sendRequest)]
-    fn send_request(&self) -> SCResult<AsyncCall<BigUint>> {
+    fn send_request(&self) -> SCResult<AsyncCall<Self::SendApi>> {
         only_owner!(self, "Caller must be owner");
         let callback_address = self.blockchain().get_sc_address();
         let callback_method = BoxedBytes::from(&b"reply"[..]);
         let nonce = self.nonce().get();
         self.nonce().update(|nonce| *nonce += 1);
         let data = BoxedBytes::empty();
-        let oracle = contract_call!(self, self.get_oracle_address(), OracleInterfaceProxy);
+        let oracle = self.oracle_proxy(self.get_oracle_address());
         Ok(oracle
             .request(callback_address, callback_method, nonce, data)
             .async_call())

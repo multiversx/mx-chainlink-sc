@@ -83,6 +83,7 @@
         },
         {
             "step": "scDeploy",
+            "txId": "1-deploy oracle 1",
             "tx": {
                 "from": "address:oracle1_owner",
                 "contractCode": "file:../oracle/output/oracle.wasm",
@@ -100,6 +101,7 @@
         },
         {
             "step": "scDeploy",
+            "txId": "2-deploy oracle 2",
             "tx": {
                 "from": "address:oracle2_owner",
                 "contractCode": "file:../oracle/output/oracle.wasm",
@@ -117,6 +119,7 @@
         },
         {
             "step": "scCall",
+            "txId": "3-add authorization oracle 1",
             "tx": {
                 "from": "address:oracle1_owner",
                 "to": "address:oracle1_smart_contract",
@@ -137,6 +140,7 @@
         },
         {
             "step": "scDeploy",
+            "txId": "4-deploy client 1",
             "tx": {
                 "from": "address:client1_owner",
                 "contractCode": "file:../client/output/client.wasm",
@@ -156,6 +160,7 @@
         },
         {
             "step": "scDeploy",
+            "txId": "5-deploy client 2",
             "tx": {
                 "from": "address:client2_owner",
                 "contractCode": "file:../client/output/client.wasm",
@@ -175,6 +180,7 @@
         },
         {
             "step": "scDeploy",
+            "txId": "6-deploy aggregator",
             "tx": {
                 "from": "address:aggregator_owner",
                 "contractCode": "file:../aggregator/output/aggregator.wasm",
@@ -201,7 +207,7 @@
         },
         {
             "step": "scCall",
-            "txId": "1-addFunds - enough for 2 rounds of oracle payments--",
+            "txId": "7-addFunds - enough for 2 rounds of oracle payments--",
             "tx": {
                 "from": "address:aggregator_owner",
                 "to": "address:aggregator_smart_contract",
@@ -221,7 +227,7 @@
         },
         {
             "step": "scCall",
-            "txId": "2-availableFunds - check that the funds were added--",
+            "txId": "8-availableFunds - check that the funds were added--",
             "tx": {
                 "from": "address:aggregator_owner",
                 "to": "address:aggregator_smart_contract",
@@ -243,7 +249,7 @@
         },
         {
             "step": "scCall",
-            "txId": "3-changeOracles - add 3 oracles and their admins--",
+            "txId": "9-changeOracles - add 3 oracles and their admins--",
             "tx": {
                 "from": "address:aggregator_owner",
                 "to": "address:aggregator_smart_contract",

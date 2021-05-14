@@ -1,7 +1,6 @@
 #![no_std]
 
 extern crate aggregator;
-use crate::aggregator::aggregator_interface::{AggregatorInterface, AggregatorInterfaceProxy};
 use elrond_wasm::types::MultiResultVec;
 mod oracle_request;
 use oracle_request::{OracleRequest, RequestView};
@@ -9,12 +8,16 @@ use oracle_request::{OracleRequest, RequestView};
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
-#[elrond_wasm_derive::callable(ClientInterfaceProxy)]
-pub trait ClientInterface<BigUint: BigIntApi> {
-    fn reply(&self, nonce: u64, answer: BoxedBytes) -> ContractCall<BigUint, ()>;
+mod client_proxy {
+    elrond_wasm::imports!();
+    #[elrond_wasm_derive::proxy]
+    pub trait Client {
+        #[endpoint]
+        fn reply(&self, nonce: u64, answer: BoxedBytes);
+    }
 }
 
-#[elrond_wasm_derive::contract(OracleImpl)]
+#[elrond_wasm_derive::contract]
 pub trait Oracle {
     #[storage_mapper("nonces")]
     fn nonces(&self) -> MapMapper<Self::Storage, Address, u64>;
@@ -88,8 +91,8 @@ pub trait Oracle {
         address: Address,
         nonce: u64,
         data: BoxedBytes,
-    ) -> SCResult<AsyncCall<BigUint>> {
-        sc_try!(self.only_authorized_node());
+    ) -> SCResult<AsyncCall<Self::SendApi>> {
+        self.only_authorized_node()?;
 
         // Get the request
         let requests = self.requests();
@@ -110,7 +113,7 @@ pub trait Oracle {
 
         address_requests.remove(&nonce);
 
-        let client = contract_call!(self, request.callback_address, ClientInterfaceProxy);
+        let client = self.client_proxy(request.callback_address);
         Ok(client.reply(nonce, data).async_call())
     }
 
@@ -119,11 +122,12 @@ pub trait Oracle {
         &self,
         aggregator: Address,
         round_id: u64,
-        submission: BigUint,
-    ) -> SCResult<AsyncCall<BigUint>> {
+        submission: Self::BigUint,
+    ) -> SCResult<AsyncCall<Self::SendApi>> {
         only_owner!(self, "Only owner may call this function!");
-        Ok(contract_call!(self, aggregator, AggregatorInterfaceProxy)
-            .submit(round_id, submission)
+        Ok(self
+            .aggregator_proxy(aggregator)
+            .submit(round_id, [submission].iter().cloned().collect())
             .async_call())
     }
 
@@ -152,4 +156,10 @@ pub trait Oracle {
         );
         Ok(())
     }
+
+    #[proxy]
+    fn client_proxy(&self, to: Address) -> client_proxy::Proxy<Self::SendApi>;
+
+    #[proxy]
+    fn aggregator_proxy(&self, to: Address) -> aggregator::Proxy<Self::SendApi>;
 }

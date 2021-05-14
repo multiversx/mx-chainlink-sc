@@ -18,10 +18,3 @@ pub struct Round<BigUint: BigUintApi> {
     pub updated_at: u64,
     pub answered_in_round: u64,
 }
-
-#[elrond_wasm_derive::callable(AggregatorInterfaceProxy)]
-pub trait AggregatorInterface<BigUint: BigUintApi> {
-    fn submit(&self, round_id: u64, submission: BigUint) -> ContractCall<BigUint, ()>;
-    fn getRoundData(&self, round_id: u64) -> ContractCall<BigUint, OptionalArg<Round<BigUint>>>;
-    fn latestRoundData(&self) -> ContractCall<BigUint, OptionalArg<Round<BigUint>>>;
-}
