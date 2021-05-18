@@ -77,15 +77,21 @@ func (eh *ExchangeAggregator) GetPricesForPairs() []PairData {
 			PriceMultiplied: eh.MultiplyFloat64CastStr(currPrice),
 		}
 
-		if lastPrice == 0 || !eh.config.CheckPercentageChange {
+		if lastPrice == 0 {
+			results = append(results, pairData)
+			eh.prices[pair.Base] = currPrice
+			continue
+		}
+
+		if !eh.config.CheckPercentageChange {
 			results = append(results, pairData)
 		} else {
 			percentageChange := PercentageChange(currPrice, lastPrice)
 			if percentageChange >= eh.config.PercentageThreshold {
 				results = append(results, pairData)
+				eh.prices[pair.Base] = currPrice
 			}
 		}
-		eh.prices[pair.Base] = currPrice
 	}
 	return results
 }
