@@ -1,0 +1,19 @@
+{
+  "initiators": [
+    {
+      "type": "cron",
+      "params": {
+        "schedule": "CRON_TZ=UTC */120 * * * * *"
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "type": "erdpricejob",
+      "confirmations": null,
+      "params": {}
+    }
+  ],
+  "startAt": null,
+  "endAt": null
+}
