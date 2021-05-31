@@ -16,7 +16,7 @@ const (
 	ethDecimals = 18
 )
 
-var wei = math.Pow(10, -ethDecimals)
+var weiNeg = math.Pow(10, -ethDecimals)
 
 type Response struct {
 	Code uint16  `json:"code"`
@@ -71,7 +71,7 @@ func (egd *EthGasDenominator) GasPriceDenominated() (GasPair, error) {
 	}
 
 	gweiFast := gasData.Fast * gasLimit
-	gweiAsEth := float64(gweiFast) * wei
+	gweiAsEth := float64(gweiFast) * weiNeg
 	nominalValue := ethPrice * gweiAsEth
 	nominalAmount := nominalValue / targetPrice
 
