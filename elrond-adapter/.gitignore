@@ -19,6 +19,7 @@
 /.env
 /.env.dev
 /.env.testing
+logs
 
 .env
 .env.dev
