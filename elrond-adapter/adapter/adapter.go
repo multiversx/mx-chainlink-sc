@@ -3,6 +3,7 @@ package adapter
 import (
 	"encoding/hex"
 	"errors"
+	gasStation2 "github.com/ElrondNetwork/elrond-adapter/gasStation"
 	"log"
 	"math/big"
 
@@ -15,6 +16,7 @@ import (
 type adapter struct {
 	chainInteractor    *interaction.BlockchainInteractor
 	exchangeAggregator *aggregator.ExchangeAggregator
+	ethGasDenominator  *gasStation2.EthGasDenominator
 	config             config.GeneralConfig
 }
 
@@ -24,9 +26,11 @@ func NewAdapter(config config.GeneralConfig) (*adapter, error) {
 		return nil, err
 	}
 	exchangeAggregator := aggregator.NewExchangeAggregator(config.Exchange)
+	ethGasDenominator := gasStation2.NewEthGasDenominator(exchangeAggregator, config.GasConfig)
 	return &adapter{
 		chainInteractor:    interactor,
 		exchangeAggregator: exchangeAggregator,
+		ethGasDenominator:  ethGasDenominator,
 		config:             config,
 	}, nil
 }
@@ -88,6 +92,26 @@ func (a *adapter) HandleWriteFeed(data models.RequestData) (string, error) {
 	}
 
 	return txHash, nil
+}
+
+func (a *adapter) HandleEthGasDenomination() (string, error) {
+	gasPair, err := a.ethGasDenominator.GasPriceDenominated()
+	if err != nil {
+		return "", err
+	}
+
+	argsHex, err := prepareJobResultArgsHex(gasPair.Base, gasPair.Quote, gasPair.Denomination)
+	if err != nil {
+		return "", err
+	}
+
+	inputData := gasPair.Endpoint + "@" + argsHex
+	tx, err := a.chainInteractor.CreateSignedTx("0", []byte(inputData), gasPair.Address)
+	if err != nil {
+		return "", err
+	}
+
+	return a.chainInteractor.SendTx(tx)
 }
 
 func prepareJobResultArgsHex(base, quote, price string) (string, error) {

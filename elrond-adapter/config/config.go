@@ -14,6 +14,7 @@ type GeneralConfig struct {
 	Contract   ContractInformation
 	Server     ServerConfig
 	Exchange   ExchangeConfig
+	GasConfig  GasConfig
 }
 
 type BlockchainInformation struct {
@@ -45,6 +46,15 @@ type PairsConfig struct {
 	Quote     string
 	ScAddress string
 	Endpoint  string
+}
+
+type GasConfig struct {
+	GasLimit            uint64
+	TargetAsset         string
+	TargetAssetDecimals uint8
+	TxPremium           uint8
+	Address             string
+	Endpoint            string
 }
 
 func LoadConfig() (GeneralConfig, error) {

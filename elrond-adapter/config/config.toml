@@ -23,3 +23,11 @@
         {Base = "LINK", Quote= "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit"},
         {Base = "BTC", Quote= "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit"},
     ]
+
+[GasConfig]
+    GasLimit = 200_000
+    TargetAsset = "EGLD"
+    TargetAssetDecimals = 18
+    TxPremium = 0
+    Address = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz"
+    Endpoint = "submit"

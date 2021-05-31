@@ -27,7 +27,8 @@ func NewWebServer(adapter *adapter) (*webServer, error) {
 func (ws *webServer) Run(port string) {
 	ws.router.POST("/write", ws.processWriteRequest)
 	ws.router.POST("/price", ws.processPriceRequest)
-	ws.router.POST("/job", ws.processJobRunRequest)
+	ws.router.POST("/price-job", ws.processJobRunRequest)
+	ws.router.POST("/ethgas/denominate", ws.processGasRequest)
 
 	if err := ws.router.Run(port); err != nil {
 		panic(err)
@@ -81,6 +82,22 @@ func (ws *webServer) processJobRunRequest(c *gin.Context) {
 
 	result := map[string][]string{"txHashes": responseData}
 	okResponse(c, result, req.JobID)
+}
+
+func (ws *webServer) processGasRequest(c *gin.Context) {
+	var req models.JobRequest
+	if err := c.BindJSON(&req); err != nil {
+		errResponse(c, http.StatusBadRequest)
+		return
+	}
+
+	gasValue, err := ws.adapter.HandleEthGasDenomination()
+	if err != nil {
+		errResponse(c, http.StatusInternalServerError)
+		return
+	}
+
+	okResponse(c, gasValue, req.JobID)
 }
 
 func okResponse(c *gin.Context, value interface{}, jobID string) {
