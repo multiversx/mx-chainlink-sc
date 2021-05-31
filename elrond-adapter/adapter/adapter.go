@@ -3,20 +3,20 @@ package adapter
 import (
 	"encoding/hex"
 	"errors"
-	gasStation2 "github.com/ElrondNetwork/elrond-adapter/gasStation"
 	"log"
 	"math/big"
 
 	"github.com/ElrondNetwork/elrond-adapter/aggregator"
 	"github.com/ElrondNetwork/elrond-adapter/config"
 	models "github.com/ElrondNetwork/elrond-adapter/data"
+	"github.com/ElrondNetwork/elrond-adapter/gasStation"
 	"github.com/ElrondNetwork/elrond-adapter/interaction"
 )
 
 type adapter struct {
 	chainInteractor    *interaction.BlockchainInteractor
 	exchangeAggregator *aggregator.ExchangeAggregator
-	ethGasDenominator  *gasStation2.EthGasDenominator
+	ethGasDenominator  *gasStation.EthGasDenominator
 	config             config.GeneralConfig
 }
 
@@ -26,7 +26,7 @@ func NewAdapter(config config.GeneralConfig) (*adapter, error) {
 		return nil, err
 	}
 	exchangeAggregator := aggregator.NewExchangeAggregator(config.Exchange)
-	ethGasDenominator := gasStation2.NewEthGasDenominator(exchangeAggregator, config.GasConfig)
+	ethGasDenominator := gasStation.NewEthGasDenominator(exchangeAggregator, config.GasConfig)
 	return &adapter{
 		chainInteractor:    interactor,
 		exchangeAggregator: exchangeAggregator,
