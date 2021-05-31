@@ -1,12 +1,12 @@
 package aggregator
 
 import (
-	"log"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-adapter/config"
+	logger "github.com/ElrondNetwork/elrond-go-logger"
 )
 
 const (
@@ -20,7 +20,10 @@ const (
 
 type Exchange interface {
 	FetchPrice(base, quote string) (float64, error)
+	Name() string
 }
+
+var log = logger.GetOrCreate("aggregator")
 
 type PairData struct {
 	Base            string
@@ -64,7 +67,11 @@ func (eh *ExchangeAggregator) GetPricesForPairs() []PairData {
 	for _, pair := range eh.config.Pairs {
 		currPrice, err := eh.GetPrice(pair.Base, pair.Quote)
 		if err != nil {
-			log.Println(err)
+			log.Error("failed to aggregate price for pair",
+				"base", pair.Base,
+				"quote", pair.Quote,
+				"err", err.Error(),
+			)
 			break
 		}
 
@@ -111,6 +118,12 @@ func (eh *ExchangeAggregator) GetPrice(base, quote string) (float64, error) {
 			mut.Lock()
 			defer mut.Unlock()
 			if err != nil {
+				log.Error("failed to fetch price",
+					"exchange", exchange.Name(),
+					"base", baseUpper,
+					"quote", quoteUpper,
+					"err", err.Error(),
+				)
 				return
 			}
 			prices = append(prices, price)

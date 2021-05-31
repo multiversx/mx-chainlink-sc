@@ -13,7 +13,7 @@ type GeminiPriceRequest struct {
 	Price string `json:"last"`
 }
 
-func (b *Gemini) FetchPrice(base, quote string) (float64, error) {
+func (g *Gemini) FetchPrice(base, quote string) (float64, error) {
 	if strings.Contains(quote, "USD") {
 		quote = QuoteFiat
 	}
@@ -27,4 +27,8 @@ func (b *Gemini) FetchPrice(base, quote string) (float64, error) {
 		return -1, InvalidResponseDataErr
 	}
 	return StrToFloat64(gpr.Price)
+}
+
+func (g *Gemini) Name() string {
+	return "Gemini"
 }

@@ -32,3 +32,7 @@ func (o *Okex) FetchPrice(base, quote string) (float64, error) {
 	}
 	return StrToFloat64(opr.Data[0].Price)
 }
+
+func (o *Okex) Name() string {
+	return "OKEx"
+}

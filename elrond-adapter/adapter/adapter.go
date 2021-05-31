@@ -3,14 +3,16 @@ package adapter
 import (
 	"encoding/hex"
 	"errors"
-	"log"
 	"math/big"
 
 	"github.com/ElrondNetwork/elrond-adapter/aggregator"
 	"github.com/ElrondNetwork/elrond-adapter/config"
 	models "github.com/ElrondNetwork/elrond-adapter/data"
 	"github.com/ElrondNetwork/elrond-adapter/interaction"
+	logger "github.com/ElrondNetwork/elrond-go-logger"
 )
+
+var log = logger.GetOrCreate("adapter")
 
 type adapter struct {
 	chainInteractor    *interaction.BlockchainInteractor
@@ -21,6 +23,7 @@ type adapter struct {
 func NewAdapter(config config.GeneralConfig) (*adapter, error) {
 	interactor, err := interaction.NewBlockchainInteractor(config.Blockchain)
 	if err != nil {
+		log.Error("failed initialising blockchain interactor", "err", err.Error())
 		return nil, err
 	}
 	exchangeAggregator := aggregator.NewExchangeAggregator(config.Exchange)
@@ -45,18 +48,18 @@ func (a *adapter) HandlePriceFeedJob() ([]string, error) {
 	for _, pair := range pairs {
 		argsHex, err := prepareJobResultArgsHex(pair.Base, pair.Quote, pair.PriceMultiplied)
 		if err != nil {
-			log.Println(err)
+			log.Error("price job: failed to prepare args hex", "err", err.Error())
 			break
 		}
 		inputData := pair.Endpoint + "@" + argsHex
 		tx, err := a.chainInteractor.CreateSignedTx("0", []byte(inputData), pair.ScAddress)
 		if err != nil {
-			log.Println(err)
+			log.Error("price job: failed to sign transaction", "err", err.Error())
 			break
 		}
 		txHash, err := a.chainInteractor.SendTx(tx)
 		if err != nil {
-			log.Println(err)
+			log.Error("price job: failed to send transaction", "err", err.Error())
 			break
 		}
 		txHashes = append(txHashes, txHash)
@@ -76,15 +79,21 @@ func (a *adapter) HandleWriteFeed(data models.RequestData) (string, error) {
 	}
 
 	argsHex, err := prepareWriteRequestArgsHex(data.Value, data.RoundID)
+	if err != nil {
+		log.Error("write job: failed to prepare args hex", "err", err.Error())
+		return "", err
+	}
 	inputData := scEndpoint + "@" + argsHex
 	tx, err := a.chainInteractor.CreateSignedTx("0", []byte(inputData), scAddress)
 	if err != nil {
-		return "", errors.New("failure signing transaction")
+		log.Error("write job: failed to sign transaction", "err", err.Error())
+		return "", err
 	}
 
 	txHash, err := a.chainInteractor.SendTx(tx)
 	if err != nil {
-		return "", errors.New("failure sending transaction")
+		log.Error("write job: failed to send transaction", "err", err.Error())
+		return "", err
 	}
 
 	return txHash, nil

@@ -5,7 +5,9 @@ import (
 	"strings"
 )
 
-const bitfinexPriceUrl = "https://api.bitfinex.com/v1/pubticker/%s%s"
+const (
+	bitfinexPriceUrl = "https://api.bitfinex.com/v1/pubticker/%s%s"
+)
 
 type Bitfinex struct{}
 
@@ -30,4 +32,8 @@ func (b *Bitfinex) FetchPrice(base, quote string) (float64, error) {
 		return -1, InvalidResponseDataErr
 	}
 	return StrToFloat64(bit.Price)
+}
+
+func (b *Bitfinex) Name() string {
+	return "Bitfinex"
 }
