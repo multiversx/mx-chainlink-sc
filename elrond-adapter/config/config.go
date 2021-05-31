@@ -1,9 +1,9 @@
 package config
 
 import (
-	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"os"
 
+	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/pelletier/go-toml"
 )
 
