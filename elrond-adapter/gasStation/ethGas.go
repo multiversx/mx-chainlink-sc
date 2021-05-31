@@ -1,10 +1,11 @@
 package gasStation
 
 import (
-	"github.com/ElrondNetwork/elrond-adapter/aggregator"
-	"github.com/ElrondNetwork/elrond-adapter/config"
 	"math"
 	"math/big"
+
+	"github.com/ElrondNetwork/elrond-adapter/aggregator"
+	"github.com/ElrondNetwork/elrond-adapter/config"
 )
 
 const (
