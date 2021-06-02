@@ -3,9 +3,8 @@
 
 elrond_wasm::imports!();
 pub mod median;
-mod price_aggregator_data;
 
-use elrond_wasm::{only_owner, require};
+mod price_aggregator_data;
 use price_aggregator_data::{OracleStatus, PriceFeed, TokenPair};
 
 #[elrond_wasm_derive::contract]
@@ -118,8 +117,18 @@ pub trait PriceAggregator {
         mut submissions: MapMapper<Self::Storage, Address, Self::BigUint>,
     ) -> SCResult<()> {
         if submissions.len() as u32 >= self.submission_count().get() {
-            let price_feed =
-                median::calculate(submissions.values().collect())?.ok_or("no submissions")?;
+            let result = median::calculate(submissions.values().collect());
+            let price_feed = match result {
+                Result::Ok(opt_submissions) => {
+                    if let Some(submissions) = opt_submissions {
+                        submissions
+                    } else {
+                        return sc_error!("no submissions");
+                    }
+                }
+                Result::Err(err) => return Err(err),
+            };
+
             self.rounds()
                 .entry(token_pair)
                 .or_default()
@@ -159,10 +168,11 @@ pub trait PriceAggregator {
     ) -> SCResult<MultiArg5<u32, BoxedBytes, BoxedBytes, Self::BigUint, u8>> {
         self.subtract_query_payment()?;
         let token_pair = TokenPair { from, to };
-        let round_values = self
-            .rounds()
-            .get(&token_pair)
-            .ok_or("token pair not found")?;
+
+        let round_values = match self.rounds().get(&token_pair) {
+            Some(vec_mapper) => vec_mapper,
+            None => return sc_error!("token pair not found"),
+        };
         let feed = self.make_price_feed(token_pair, round_values);
         Ok(MultiArg5::from((
             feed.round_id,
