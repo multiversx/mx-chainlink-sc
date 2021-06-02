@@ -106,21 +106,29 @@ func (a *adapter) HandleWriteFeed(data models.RequestData) (string, error) {
 func (a *adapter) HandleEthGasDenomination() (string, error) {
 	gasPair, err := a.ethGasDenominator.GasPriceDenominated()
 	if err != nil {
+		log.Error("gas denomination: failed to denominate", "err", err.Error())
 		return "", err
 	}
 
 	argsHex, err := prepareJobResultArgsHex(gasPair.Base, gasPair.Quote, gasPair.Denomination)
 	if err != nil {
+		log.Error("gas denomination: failed to parse arg hex", "err", err.Error())
 		return "", err
 	}
 
 	inputData := gasPair.Endpoint + "@" + argsHex
 	tx, err := a.chainInteractor.CreateSignedTx("0", []byte(inputData), gasPair.Address)
 	if err != nil {
+		log.Error("gas denomination: failed to sign transaction", "err", err.Error())
 		return "", err
 	}
 
-	return a.chainInteractor.SendTx(tx)
+	hash, err := a.chainInteractor.SendTx(tx)
+	if err != nil {
+		log.Error("gas denomination: failed to send transaction", "err", err.Error())
+		return "", err
+	}
+	return hash, nil
 }
 
 func prepareJobResultArgsHex(base, quote, price string) (string, error) {

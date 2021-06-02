@@ -1,12 +1,16 @@
 package gasStation
 
 import (
+	"fmt"
 	"math"
 	"math/big"
 
 	"github.com/ElrondNetwork/elrond-adapter/aggregator"
 	"github.com/ElrondNetwork/elrond-adapter/config"
+	logger "github.com/ElrondNetwork/elrond-go-logger"
 )
+
+var log = logger.GetOrCreate("gasStation")
 
 const (
 	gasNowUrl   = "https://www.gasnow.org/api/v3/gas/price"
@@ -58,6 +62,7 @@ func (egd *EthGasDenominator) GasPriceDenominated() (GasPair, error) {
 
 	gasData, err := egd.gasPriceGwei()
 	if err != nil {
+		log.Error("failed to fetch gwei", "err", err.Error())
 		return GasPair{}, err
 	}
 	ethPrice, err := egd.exchangeAggregator.GetPrice(ethTicker, quote)
@@ -76,6 +81,12 @@ func (egd *EthGasDenominator) GasPriceDenominated() (GasPair, error) {
 
 	targetUnit := math.Pow(10, float64(targetDecimals))
 	denominatedAmount := int64(nominalAmount * targetUnit)
+
+	log.Info(fmt.Sprintf("gas denomination from GWEI to %s", target),
+		"gwei fast", gweiFast,
+		"eth price", ethPrice,
+		"result", denominatedAmount,
+	)
 	return GasPair{
 		Base:         baseGwei,
 		Quote:        target,
