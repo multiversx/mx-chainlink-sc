@@ -39,3 +39,7 @@ func (b *Kraken) FetchPrice(base, quote string) (float64, error) {
 
 	return -1, NoPriceDataForTicker
 }
+
+func (b *Kraken) Name() string {
+	return "Kraken"
+}

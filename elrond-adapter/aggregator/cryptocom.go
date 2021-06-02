@@ -37,3 +37,7 @@ func (b *Cryptocom) FetchPrice(base, quote string) (float64, error) {
 	}
 	return cpr.Result.Data.Price, nil
 }
+
+func (b *Cryptocom) Name() string {
+	return "Crypto.com"
+}

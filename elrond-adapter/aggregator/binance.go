@@ -5,7 +5,9 @@ import (
 	"strings"
 )
 
-const binancePriceUrl = "https://api.binance.com/api/v3/ticker/price?symbol=%s%s"
+const (
+	binancePriceUrl = "https://api.binance.com/api/v3/ticker/price?symbol=%s%s"
+)
 
 type BinancePriceRequest struct {
 	Symbol string `json:"symbol"`
@@ -28,4 +30,8 @@ func (b *Binance) FetchPrice(base, quote string) (float64, error) {
 		return -1, InvalidResponseDataErr
 	}
 	return StrToFloat64(bpr.Price)
+}
+
+func (b *Binance) Name() string {
+	return "Binance"
 }

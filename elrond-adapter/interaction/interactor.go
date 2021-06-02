@@ -4,10 +4,13 @@ import (
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-adapter/config"
+	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-sdk/erdgo"
 	"github.com/ElrondNetwork/elrond-sdk/erdgo/blockchain"
 	"github.com/ElrondNetwork/elrond-sdk/erdgo/data"
 )
+
+var log = logger.GetOrCreate("interaction")
 
 type BlockchainInteractor struct {
 	proxyUrl   string
@@ -55,9 +58,11 @@ func (bi *BlockchainInteractor) SendTx(tx *data.Transaction) (string, error) {
 	proxy := blockchain.NewElrondProxy(bi.proxyUrl)
 	txHash, err := proxy.SendTransaction(tx)
 	if err != nil {
+		log.Debug("failed sending transaction", "err", err.Error())
 		return "", err
 	}
 
+	log.Info("current account nonce", "nonce", bi.account.Nonce)
 	bi.account.Nonce++
 	return txHash, nil
 }
@@ -82,6 +87,7 @@ func (bi *BlockchainInteractor) CreateSignedTx(
 
 	err := erdgo.SignTransaction(tx, bi.privateKey)
 	if err != nil {
+		log.Debug("failed signing transaction", "err", err.Error())
 		return nil, err
 	}
 

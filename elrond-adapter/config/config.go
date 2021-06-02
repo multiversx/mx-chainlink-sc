@@ -1,13 +1,15 @@
 package config
 
 import (
-	"log"
 	"os"
 
+	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/pelletier/go-toml"
 )
 
 const configPath = "./config/config.toml"
+
+var log = logger.GetOrCreate("config")
 
 type GeneralConfig struct {
 	Blockchain BlockchainInformation
@@ -64,7 +66,7 @@ func LoadConfig() (GeneralConfig, error) {
 	defer func(configFile *os.File) {
 		err = configFile.Close()
 		if err != nil {
-			log.Println("failure closing file reader", err.Error())
+			log.Error("failure closing file reader", "err", err.Error())
 		}
 	}(configFile)
 

@@ -13,7 +13,7 @@ type HitbtcPriceRequest struct {
 	Price string `json:"last"`
 }
 
-func (b *Hitbtc) FetchPrice(base, quote string) (float64, error) {
+func (h *Hitbtc) FetchPrice(base, quote string) (float64, error) {
 	if strings.Contains(quote, "USD") {
 		quote = QuoteFiat
 	}
@@ -27,4 +27,8 @@ func (b *Hitbtc) FetchPrice(base, quote string) (float64, error) {
 		return -1, InvalidResponseDataErr
 	}
 	return StrToFloat64(hpr.Price)
+}
+
+func (h *Hitbtc) Name() string {
+	return "HitBTC"
 }

@@ -17,7 +17,7 @@ type HuobiPriceTicker struct {
 	Price float64 `json:"close"`
 }
 
-func (b *Huobi) FetchPrice(base, quote string) (float64, error) {
+func (h *Huobi) FetchPrice(base, quote string) (float64, error) {
 	if strings.Contains(quote, "USD") {
 		quote = QuoteStable
 	}
@@ -35,4 +35,8 @@ func (b *Huobi) FetchPrice(base, quote string) (float64, error) {
 		return -1, InvalidResponseDataErr
 	}
 	return hpr.Ticker.Price, nil
+}
+
+func (h *Huobi) Name() string {
+	return "Huobi"
 }
