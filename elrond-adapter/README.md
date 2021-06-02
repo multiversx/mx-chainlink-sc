@@ -30,10 +30,18 @@ Server:
 - `Port`: (optional) defaults to `:5000`, the webserver port
 
 Exchange:
-- `MultiplicationPrecision` multiplication precision before writing to the smart contract
-- `CheckPercentageChange` whether to check the percentage change before pushing
-- `PercentageThreshold` required threshold to be met before pushing 
-- `Pairs` a list of pairs that the service will fetch updates for in case a bridge for recurrent price feeds is active
+- `MultiplicationPrecision`: multiplication precision before writing to the smart contract
+- `CheckPercentageChange`: whether to check the percentage change before pushing
+- `PercentageThreshold`: required threshold to be met before pushing 
+- `Pairs`: a list of pairs that the service will fetch updates for in case a bridge for recurrent price feeds is active
+
+GasConfig
+
+- `TargetAsset`: the asset to denominate gwei in
+- `TargetAssetDecimals`: denomination precision in decimals
+- `TxPremium`: (optional) signals if the gas price should have a premium cost
+- `Address`: address of the smart contract to write denomination to, bech32 encoded
+- `Endpoint`: endpoint name that the service will write to in the provided smart contract
 
 Set the required environment, and run from the project root:
 
@@ -65,6 +73,13 @@ The environment variables are read from `./config/config.toml`:
         {Base = "LINK", Quote= "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit"},
         {Base = "BTC", Quote= "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit"},
     ]
+
+[GasConfig]
+    TargetAsset = "EGLD"
+    TargetAssetDecimals = 18
+    TxPremium = 0
+    Address = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz"
+    Endpoint = "submit"
 ```
 
 ## API
@@ -101,7 +116,7 @@ Output:
 }
 ```
 
-### HTTP `POST /job` endpoint
+### HTTP `POST /price-job` endpoint
 
 Starts a price feed job which aggregates feeds from multiple sources and pushes data in the aggregator smart contract
 
@@ -141,6 +156,34 @@ Output:
       "9c0c4c1ab8372efc21c4bbcadfc79162564e9895c91f73d942cb96be53ddd27e"
     ]
   },
+  "statusCode": 200
+}
+```
+
+### HTTP `POST /ethgas/denominate` endpoint
+
+Fetched latest eth gas prices, in gwei and denominates the value in a specified asset. e.g GWEI/EGLD
+
+Data body can be left empty, it reads input values from `config.toml`
+
+Input:
+
+```json
+{
+  "id": "bbfd3e3a8aed4d46abb0a89764951bf9",
+  "data": {}
+}
+```
+
+Output:
+
+```json
+{
+  "jobRunID": "bbfd3e3a8aed4d46abb0a89764951bf9",
+  "data": {
+    "result": "19feccf4b8590bcc9554ad632ff23f8344d0318fbac643bdba5fa7a605373bf4"
+  },
+  "result": "19feccf4b8590bcc9554ad632ff23f8344d0318fbac643bdba5fa7a605373bf4",
   "statusCode": 200
 }
 ```
