@@ -24,15 +24,22 @@ func NewWebServer(adapter *adapter) (*webServer, error) {
 	}, nil
 }
 
-func (ws *webServer) Run(port string) {
+func (ws *webServer) Run(port string) *http.Server {
 	ws.router.POST("/write", ws.processWriteRequest)
 	ws.router.POST("/price", ws.processPriceRequest)
 	ws.router.POST("/price-job", ws.processJobRunRequest)
 	ws.router.POST("/ethgas/denominate", ws.processGasRequest)
 
-	if err := ws.router.Run(port); err != nil {
-		panic(err)
+	server := &http.Server{
+		Addr:    port,
+		Handler: ws.router,
 	}
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
+	return server
 }
 
 func (ws *webServer) processWriteRequest(c *gin.Context) {
