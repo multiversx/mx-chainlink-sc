@@ -24,30 +24,30 @@ fn contract_map() -> ContractMap<TxContext> {
 
 #[test]
 fn init() {
-    parse_execute_mandos("mandos/init.scen.json", &contract_map());
+    elrond_wasm_debug::mandos_rs("mandos/init.scen.json", &contract_map());
 }
 
 #[test]
 fn client_request() {
-    parse_execute_mandos("mandos/client-request.scen.json", &contract_map());
+    elrond_wasm_debug::mandos_rs("mandos/client-request.scen.json", &contract_map());
 }
 
 #[test]
 fn aggregator() {
-    parse_execute_mandos("mandos/aggregator.scen.json", &contract_map());
+    elrond_wasm_debug::mandos_rs("mandos/aggregator.scen.json", &contract_map());
 }
 
 #[test]
 fn init_price_aggregator() {
-    parse_execute_mandos("mandos/init-price-aggregator.scen.json", &contract_map());
+    elrond_wasm_debug::mandos_rs("mandos/init-price-aggregator.scen.json", &contract_map());
 }
 
 #[test]
 fn price_aggregator() {
-    parse_execute_mandos("mandos/price-aggregator.scen.json", &contract_map());
+    elrond_wasm_debug::mandos_rs("mandos/price-aggregator.scen.json", &contract_map());
 }
 
 #[test]
 fn price_aggregator_balance() {
-    parse_execute_mandos("mandos/price-aggregator-balance.scen.json", &contract_map());
+    elrond_wasm_debug::mandos_rs("mandos/price-aggregator-balance.scen.json", &contract_map());
 }
