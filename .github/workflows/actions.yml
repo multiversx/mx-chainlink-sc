@@ -13,6 +13,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
+          repository: 'ElrondNetwork/elrond-wasm-rs'
+          ref: 'master'
+          path: 'elrond-wasm-rs'
+      - uses: actions/checkout@v2
+        with:
           path: 'sc-chainlink-rs'
       - uses: actions-rs/toolchain@v1
         with:
