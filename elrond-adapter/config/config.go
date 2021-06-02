@@ -49,7 +49,6 @@ type PairsConfig struct {
 }
 
 type GasConfig struct {
-	GasLimit            uint64
 	TargetAsset         string
 	TargetAssetDecimals uint8
 	TxPremium           uint8

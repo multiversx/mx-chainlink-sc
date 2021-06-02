@@ -25,7 +25,6 @@
     ]
 
 [GasConfig]
-    GasLimit = 200_000
     TargetAsset = "EGLD"
     TargetAssetDecimals = 18
     TxPremium = 0

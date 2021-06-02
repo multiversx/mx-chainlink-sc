@@ -54,7 +54,6 @@ func NewEthGasDenominator(
 
 func (egd *EthGasDenominator) GasPriceDenominated() (GasPair, error) {
 	target := egd.gasConfig.TargetAsset
-	gasLimit := egd.gasConfig.GasLimit
 	targetDecimals := egd.gasConfig.TargetAssetDecimals
 
 	gasData, err := egd.gasPriceGwei()
@@ -70,7 +69,7 @@ func (egd *EthGasDenominator) GasPriceDenominated() (GasPair, error) {
 		return GasPair{}, err
 	}
 
-	gweiFast := gasData.Fast * gasLimit
+	gweiFast := gasData.Fast
 	gweiAsEth := float64(gweiFast) * weiNeg
 	nominalValue := ethPrice * gweiAsEth
 	nominalAmount := nominalValue / targetPrice

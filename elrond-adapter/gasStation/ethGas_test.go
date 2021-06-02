@@ -12,7 +12,6 @@ func TestEthGasDenominator_GasPriceDenominated(t *testing.T) {
 	t.Parallel()
 	exchange := aggregator.NewExchangeAggregator(config.ExchangeConfig{})
 	gasDenom := NewEthGasDenominator(exchange, config.GasConfig{
-		GasLimit:            21000,
 		TargetAsset:         "EGLD",
 		TargetAssetDecimals: 18,
 	})
