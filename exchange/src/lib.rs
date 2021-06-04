@@ -4,7 +4,6 @@ elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
 extern crate aggregator;
-use elrond_wasm::require;
 
 use crate::aggregator::aggregator_interface::Round;
 

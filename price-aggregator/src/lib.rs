@@ -3,9 +3,8 @@
 
 elrond_wasm::imports!();
 pub mod median;
-mod price_aggregator_data;
 
-use elrond_wasm::{only_owner, require};
+mod price_aggregator_data;
 use price_aggregator_data::{OracleStatus, PriceFeed, TokenPair};
 
 #[elrond_wasm_derive::contract]
