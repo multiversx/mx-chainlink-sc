@@ -24,14 +24,14 @@ path = "exchange"
 path = "price-aggregator"
 
 [dependencies.elrond-wasm]
-version = "0.17.0"
+version = "0.17.1"
 
 [dependencies.elrond-wasm-derive]
-version = "0.17.0"
+version = "0.17.1"
 
 [dependencies.elrond-wasm-node]
-version = "0.17.0"
+version = "0.17.1"
 optional = true
 
 [dev-dependencies.elrond-wasm-debug]
-version = "0.17.0"
+version = "0.17.1"
