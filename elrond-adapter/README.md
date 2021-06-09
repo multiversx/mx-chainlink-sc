@@ -16,6 +16,7 @@ The external adapter allows you to configure an endpoint, account and private ke
 Supported config environment divided in sections
 
 Blockchain:
+
 - `GasPrice`: the gas price used for sending a transaction
 - `GasLimit`: the gas limit used for sending a transaction
 - `ProxyUrl`: the proxy url used to connect to the Elrond Network
@@ -23,16 +24,19 @@ Blockchain:
 - `PemPath`: (optional) defaults to `./config/owner.pem`
 
 Aggregator:
+
 - `Address`: address of the smart contract you wish to write updates to, bech32 encoded
 - `Endpoint`: endpoint name that the service will write to in the provided smart contract
 
 Server:
+
 - `Port`: (optional) defaults to `:5000`, the webserver port
 
 Exchange:
+
 - `MultiplicationPrecision`: multiplication precision before writing to the smart contract
 - `CheckPercentageChange`: whether to check the percentage change before pushing
-- `PercentageThreshold`: required threshold to be met before pushing 
+- `PercentageThreshold`: required threshold to be met before pushing
 - `Pairs`: a list of pairs that the service will fetch updates for in case a bridge for recurrent price feeds is active
 
 GasConfig
@@ -49,37 +53,37 @@ The environment variables are read from `./config/config.toml`:
 
 ```toml
 [Blockchain]
-    GasPrice = 1_000_000_000
-    GasLimit = 100_000_000
-    ProxyUrl = "https://testnet-gateway.elrond.com"
-    ChainID = "T"
-    PemPath = "./config/owner.pem"
+GasPrice = 1_000_000_000
+GasLimit = 100_000_000
+ProxyUrl = "https://testnet-gateway.elrond.com"
+ChainID = "T"
+PemPath = "./config/owner.pem"
 
 [Contract]
-    Address = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz"
-    Endpoint = "submit"
+Address = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz"
+Endpoint = "submit"
 
 [Server]
-    Port = ":5000"
+Port = ":5000"
 
 [Exchange]
-    MultiplicationPrecision = 100
-    CheckPercentageChange = false
-    PercentageThreshold = 2.5
-    Pairs = [
-        {Base = "EGLD", Quote= "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit"},
-        {Base = "ETH", Quote= "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit"},
-        {Base = "AAVE", Quote= "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit"},
-        {Base = "LINK", Quote= "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit"},
-        {Base = "BTC", Quote= "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit"},
-    ]
+MultiplicationPrecision = 100
+CheckPercentageChange = false
+PercentageThreshold = 2.5
+Pairs = [
+    { Base = "EGLD", Quote = "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit" },
+    { Base = "ETH", Quote = "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit" },
+    { Base = "AAVE", Quote = "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit" },
+    { Base = "LINK", Quote = "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit" },
+    { Base = "BTC", Quote = "USD", ScAddress = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz", Endpoint = "submit" },
+]
 
 [GasConfig]
-    TargetAsset = "EGLD"
-    TargetAssetDecimals = 18
-    TxPremium = 0
-    Address = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz"
-    Endpoint = "submit"
+TargetAsset = "EGLD"
+TargetAssetDecimals = 18
+TxPremium = 0
+Address = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz"
+Endpoint = "submit"
 ```
 
 ## API
@@ -188,3 +192,69 @@ Output:
 }
 ```
 
+## Bridges
+
+In order for the Chainlink node to be able to communicate with the Elrond-adapter, it requires a bridge.
+
+Bridges define the task's name, and the endpoint the adapter uses to execute the task.
+
+For a tutorial on how to add a new bridge from the Node Operator
+UI: [Chainlink-Bridges](https://docs.chain.link/docs/node-operators/).
+
+Job spec
+examples [here](https://github.com/ElrondNetwork/sc-chainlink-rs/tree/master/elrond-adapter/config/exampleSpecs).
+
+### Price feed job
+
+In order to execute the price feed job, one needs to create a bridge for that endpoint and, a job specification
+
+For example one can create a bridge with the name `erd-price-job` and URL `http://<host>/price-job`. A job specification
+for this bridge can contain a cron initiator, which executes every 10 minutes and, a list of tasks, in this case the
+previously created bridge.
+
+```json
+{
+  "initiators": [
+    {
+      "type": "cron",
+      "params": {
+        "schedule": "CRON_TZ=UTC */10 * * * *"
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "type": "erd-price-job",
+      "confirmations": null,
+      "params": {}
+    }
+  ]
+}
+```
+
+### Gwei denominator
+
+Similar to the price feed bridge, one needs to first create the bridge, let's name it `gwei-denomination-job` with the
+URL `http://<host>/ethgas/denominate`. Using the same job spec structure as above, a cron job can be created, which
+fetches the gas price in gwei, every 10 minutes.
+
+```json
+{
+  "initiators": [
+    {
+      "type": "cron",
+      "params": {
+        "schedule": "CRON_TZ=UTC */10 * * * *"
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "type": "gwei-denomination-job",
+      "confirmations": null,
+      "params": {}
+    }
+  ]
+}
+
+```
