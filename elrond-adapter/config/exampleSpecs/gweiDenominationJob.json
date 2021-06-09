@@ -3,17 +3,15 @@
     {
       "type": "cron",
       "params": {
-        "schedule": "CRON_TZ=UTC */120 * * * * *"
+        "schedule": "CRON_TZ=UTC */10 * * * *"
       }
     }
   ],
   "tasks": [
     {
-      "type": "erdpricejob",
+      "type": "gwei-denomination-job",
       "confirmations": null,
       "params": {}
     }
-  ],
-  "startAt": null,
-  "endAt": null
+  ]
 }

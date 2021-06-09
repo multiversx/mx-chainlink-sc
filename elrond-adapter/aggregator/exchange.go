@@ -84,6 +84,13 @@ func (eh *ExchangeAggregator) GetPricesForPairs() []PairData {
 			PriceMultiplied: eh.MultiplyFloat64CastStr(currPrice),
 		}
 
+		log.Info("aggregated price for pair",
+			"base", pair.Base,
+			"quote", pair.Quote,
+			"price raw", currPrice,
+			"price multiplied", pairData.PriceMultiplied,
+		)
+
 		if lastPrice == 0 {
 			results = append(results, pairData)
 			eh.prices[pair.Base] = currPrice

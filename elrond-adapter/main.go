@@ -43,7 +43,7 @@ VERSION:
 
 	logLevel = cli.StringFlag{
 		Name:  "log-level",
-		Usage: "",
+		Usage: "This flag specifies the log level. Options: *:NONE | ERROR | WARN | INFO | DEBUG | TRACE",
 		Value: fmt.Sprintf("*:%s", logger.LogInfo.String()),
 	}
 
