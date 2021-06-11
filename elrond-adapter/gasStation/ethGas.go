@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"strconv"
 
 	"github.com/ElrondNetwork/elrond-adapter/aggregator"
 	"github.com/ElrondNetwork/elrond-adapter/config"
@@ -56,44 +57,66 @@ func NewEthGasDenominator(
 	}
 }
 
-func (egd *EthGasDenominator) GasPriceDenominated() (GasPair, error) {
-	target := egd.gasConfig.TargetAsset
-	targetDecimals := egd.gasConfig.TargetAssetDecimals
-
+func (egd *EthGasDenominator) GasPricesDenominated() []GasPair {
 	gasData, err := egd.gasPriceGwei()
 	if err != nil {
 		log.Error("failed to fetch gwei", "err", err.Error())
-		return GasPair{}, err
-	}
-	ethPrice, err := egd.exchangeAggregator.GetPrice(ethTicker, quote)
-	if err != nil {
-		return GasPair{}, err
-	}
-	targetPrice, err := egd.exchangeAggregator.GetPrice(target, quote)
-	if err != nil {
-		return GasPair{}, err
+		return []GasPair{}
 	}
 
-	gweiFast := gasData.Fast
+	var gasPairs []GasPair
+	for _, asset := range egd.gasConfig.TargetAssets {
+		gasPair := GasPair{
+			Base:     baseGwei,
+			Quote:    asset.Ticker,
+			Address:  egd.gasConfig.Address,
+			Endpoint: egd.gasConfig.Endpoint,
+		}
+
+		if asset.Ticker == ethTicker {
+			log.Info("found ETH target ticker, pushing without denominating", "gwei", gasData.Fast)
+			gasPair.Denomination = strconv.FormatUint(gasData.Fast, 10)
+			continue
+		}
+
+		denominatedAmount, innerErr := egd.denominateForAsset(asset, gasData.Fast)
+		if innerErr != nil {
+			log.Error(fmt.Sprintf("failed to denominate gas for %s", asset.Ticker),
+				"err", innerErr.Error(),
+			)
+			continue
+		}
+		log.Info(fmt.Sprintf("gas denomination from GWEI to %s", asset.Ticker),
+			"gwei fast", gasData.Fast,
+			"result", denominatedAmount,
+		)
+		gasPair.Denomination = denominatedAmount.String()
+		gasPairs = append(gasPairs, gasPair)
+	}
+	return gasPairs
+}
+
+func (egd *EthGasDenominator) denominateForAsset(
+	asset config.GasTargetAsset,
+	gweiValue uint64,
+) (*big.Int, error) {
+	ethPrice, err := egd.exchangeAggregator.GetPrice(ethTicker, quote)
+	if err != nil {
+		return nil, err
+	}
+	targetPrice, err := egd.exchangeAggregator.GetPrice(asset.Ticker, quote)
+	if err != nil {
+		return nil, err
+	}
+
+	gweiFast := gweiValue
 	gweiAsEth := float64(gweiFast) * weiNeg
 	nominalValue := ethPrice * gweiAsEth
 	nominalAmount := nominalValue / targetPrice
 
-	targetUnit := math.Pow(10, float64(targetDecimals))
+	targetUnit := math.Pow(10, float64(asset.Decimals))
 	denominatedAmount := int64(nominalAmount * targetUnit)
-
-	log.Info(fmt.Sprintf("gas denomination from GWEI to %s", target),
-		"gwei fast", gweiFast,
-		"eth price", ethPrice,
-		"result", denominatedAmount,
-	)
-	return GasPair{
-		Base:         baseGwei,
-		Quote:        target,
-		Denomination: big.NewInt(denominatedAmount).String(),
-		Address:      egd.gasConfig.Address,
-		Endpoint:     egd.gasConfig.Endpoint,
-	}, nil
+	return big.NewInt(denominatedAmount), nil
 }
 
 func (egd *EthGasDenominator) gasPriceGwei() (GasData, error) {

@@ -139,6 +139,9 @@ func (eh *ExchangeAggregator) GetPrice(base, quote string) (float64, error) {
 	wg.Wait()
 
 	if !(len(prices) >= minValidResults) {
+		log.Error("failed to reach min valid results threshold",
+			"err", NotEnoughDataToComputeErr.Error(),
+		)
 		return -1, NotEnoughDataToComputeErr
 	}
 

@@ -51,11 +51,15 @@ type PairsConfig struct {
 }
 
 type GasConfig struct {
-	TargetAsset         string
-	TargetAssetDecimals uint8
-	TxPremium           uint8
-	Address             string
-	Endpoint            string
+	Address      string
+	Endpoint     string
+	TxPremium    uint8
+	TargetAssets []GasTargetAsset
+}
+
+type GasTargetAsset struct {
+	Ticker   string
+	Decimals uint8
 }
 
 func LoadConfig() (GeneralConfig, error) {

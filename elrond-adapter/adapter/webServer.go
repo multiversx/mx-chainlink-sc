@@ -98,13 +98,14 @@ func (ws *webServer) processGasRequest(c *gin.Context) {
 		return
 	}
 
-	gasValue, err := ws.adapter.HandleEthGasDenomination()
+	gasValues, err := ws.adapter.HandleEthGasDenomination()
 	if err != nil {
 		errResponse(c, http.StatusInternalServerError)
 		return
 	}
 
-	okResponse(c, gasValue, req.JobID)
+	result := map[string][]string{"txHashes": gasValues}
+	okResponse(c, result, req.JobID)
 }
 
 func okResponse(c *gin.Context, value interface{}, jobID string) {
