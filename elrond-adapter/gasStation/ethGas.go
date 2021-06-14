@@ -76,6 +76,7 @@ func (egd *EthGasDenominator) GasPricesDenominated() []GasPair {
 		if asset.Ticker == ethTicker {
 			log.Info("found ETH target ticker, pushing without denominating", "gwei", gasData.Fast)
 			gasPair.Denomination = strconv.FormatUint(gasData.Fast, 10)
+			gasPairs = append(gasPairs, gasPair)
 			continue
 		}
 
