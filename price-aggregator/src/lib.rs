@@ -172,6 +172,15 @@ pub trait PriceAggregator {
         )))
     }
 
+    #[view(latestPriceFeedOptional)]
+    fn latest_price_feed_optional(
+        &self,
+        from: BoxedBytes,
+        to: BoxedBytes,
+    ) -> OptionalResult<MultiArg5<u32, BoxedBytes, BoxedBytes, Self::BigUint, u8>> {
+        self.latest_price_feed(from, to).ok().into()
+    }
+
     #[endpoint(setSubmissionCount)]
     fn set_submission_count(&self, submission_count: u32) -> SCResult<()> {
         only_owner!(self, "Caller must be owner");
