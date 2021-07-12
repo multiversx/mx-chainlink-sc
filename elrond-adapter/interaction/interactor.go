@@ -18,10 +18,10 @@ type BlockchainInteractor struct {
 	chainID    string
 	gasLimit   uint64
 	gasPrice   uint64
+	nonce      uint64
 	privateKey []byte
 	publicKey  string
 	proxy      blockchain.ProxyHandler
-	account    *data.Account
 	txMut      sync.Mutex
 }
 
@@ -48,10 +48,10 @@ func NewBlockchainInteractor(chainInfo config.BlockchainInformation) (*Blockchai
 		chainID:    chainInfo.ChainID,
 		gasLimit:   chainInfo.GasLimit,
 		gasPrice:   chainInfo.GasPrice,
+		nonce:      account.Nonce,
 		privateKey: sk,
 		publicKey:  pk,
 		proxy:      proxy,
-		account:    account,
 	}, nil
 }
 
@@ -62,7 +62,7 @@ func (bi *BlockchainInteractor) SendTx(tx *data.Transaction) (string, error) {
 		return "", err
 	}
 
-	log.Info("current account nonce", "nonce", tx.Nonce)
+	log.Info("current local nonce", "nonce", tx.Nonce)
 	return txHash, nil
 }
 
@@ -74,22 +74,25 @@ func (bi *BlockchainInteractor) CreateSignedTx(
 	bi.txMut.Lock()
 	defer bi.txMut.Unlock()
 
-	addressHandler, err := data.NewAddressFromBech32String(bi.publicKey)
+	account, err := bi.getAccount()
 	if err != nil {
 		return nil, err
 	}
-
-	bi.account, err = bi.proxy.GetAccount(addressHandler)
-	if err != nil {
-		return nil, err
+	if account.Nonce > bi.nonce {
+		log.Debug("got higher nonce from proxy",
+			"nonce", account.Nonce,
+			"current nonce", bi.nonce,
+			"replacing", true,
+		)
+		bi.nonce = account.Nonce
 	}
 
 	tx := &data.Transaction{
 		Value:    value,
 		RcvAddr:  receiver,
 		Data:     inputData,
-		Nonce:    bi.account.Nonce,
-		SndAddr:  bi.account.Address,
+		SndAddr:  account.Address,
+		Nonce:    bi.nonce,
 		GasPrice: bi.gasPrice,
 		GasLimit: bi.gasLimit,
 		ChainID:  bi.chainID,
@@ -103,11 +106,21 @@ func (bi *BlockchainInteractor) CreateSignedTx(
 		return nil, err
 	}
 
+	bi.nonce++
 	return tx, nil
 }
 
-func (bi *BlockchainInteractor) GetOwnAccount() data.Account {
-	return *bi.account
+func (bi *BlockchainInteractor) getAccount() (*data.Account, error) {
+	addressHandler, err := data.NewAddressFromBech32String(bi.publicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := bi.proxy.GetAccount(addressHandler)
+	if err != nil {
+		return nil, err
+	}
+	return account, nil
 }
 
 func (bi *BlockchainInteractor) GetKeyPair() ([]byte, string) {
