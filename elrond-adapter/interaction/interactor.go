@@ -18,10 +18,10 @@ type BlockchainInteractor struct {
 	chainID    string
 	gasLimit   uint64
 	gasPrice   uint64
-	nonce      uint64
 	privateKey []byte
 	publicKey  string
 	proxy      blockchain.ProxyHandler
+	account    data.Account
 	txMut      sync.Mutex
 }
 
@@ -48,7 +48,7 @@ func NewBlockchainInteractor(chainInfo config.BlockchainInformation) (*Blockchai
 		chainID:    chainInfo.ChainID,
 		gasLimit:   chainInfo.GasLimit,
 		gasPrice:   chainInfo.GasPrice,
-		nonce:      account.Nonce,
+		account:    *account,
 		privateKey: sk,
 		publicKey:  pk,
 		proxy:      proxy,
@@ -78,13 +78,13 @@ func (bi *BlockchainInteractor) CreateSignedTx(
 	if err != nil {
 		return nil, err
 	}
-	if account.Nonce > bi.nonce {
+	if account.Nonce > bi.account.Nonce {
 		log.Debug("got higher nonce from proxy",
 			"nonce", account.Nonce,
-			"current nonce", bi.nonce,
+			"current nonce", bi.account.Nonce,
 			"replacing", true,
 		)
-		bi.nonce = account.Nonce
+		bi.account.Nonce = account.Nonce
 	}
 
 	tx := &data.Transaction{
@@ -92,7 +92,7 @@ func (bi *BlockchainInteractor) CreateSignedTx(
 		RcvAddr:  receiver,
 		Data:     inputData,
 		SndAddr:  account.Address,
-		Nonce:    bi.nonce,
+		Nonce:    bi.account.Nonce,
 		GasPrice: bi.gasPrice,
 		GasLimit: bi.gasLimit,
 		ChainID:  bi.chainID,
@@ -106,7 +106,7 @@ func (bi *BlockchainInteractor) CreateSignedTx(
 		return nil, err
 	}
 
-	bi.nonce++
+	bi.account.Nonce++
 	return tx, nil
 }
 
