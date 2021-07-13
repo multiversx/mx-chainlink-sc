@@ -38,8 +38,6 @@ type GasPair struct {
 	Base         string
 	Quote        string
 	Denomination string
-	Address      string
-	Endpoint     string
 }
 
 type EthGasDenominator struct {
@@ -67,10 +65,8 @@ func (egd *EthGasDenominator) GasPricesDenominated() []GasPair {
 	var gasPairs []GasPair
 	for _, asset := range egd.gasStationConfig.TargetAssets {
 		gasPair := GasPair{
-			Base:     baseGwei,
-			Quote:    asset.Ticker,
-			Address:  egd.gasStationConfig.Address,
-			Endpoint: egd.gasStationConfig.Endpoint,
+			Base:  baseGwei,
+			Quote: asset.Ticker,
 		}
 
 		if asset.Ticker == ethTicker {

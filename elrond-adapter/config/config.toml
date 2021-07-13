@@ -12,8 +12,8 @@
     Port = ":5000"
 
 [Contract]
-    Address = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz"
     Endpoint = "submit"
+    Address = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz"
 
 [PriceFeedBatch]
     Endpoint = "submitBatch"
@@ -22,7 +22,6 @@
 [GasStation]
     Endpoint = "submitBatch"
     Address = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz"
-    TxPremium = 0
     TargetAssets = [
         { Ticker = "EGLD", Decimals = 18 },
         { Ticker = "ETH", Decimals = 18 },

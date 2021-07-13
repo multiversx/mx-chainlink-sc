@@ -62,7 +62,6 @@ type PriceFeedBatchConfig struct {
 type GasStationConfig struct {
 	Address      string
 	Endpoint     string
-	TxPremium    uint8
 	TargetAssets []GasTargetAsset
 }
 

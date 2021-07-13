@@ -112,7 +112,9 @@ func (a *adapter) HandleWriteFeed(data models.RequestData) (string, error) {
 
 func (a *adapter) HandleEthGasDenomination() ([]string, error) {
 	var txHashes []string
+
 	gasPairs := a.ethGasDenominator.GasPricesDenominated()
+	inputData := a.config.GasStation.Endpoint
 	for _, gasPair := range gasPairs {
 		argsHex, err := prepareJobResultArgsHex(gasPair.Base, gasPair.Quote, gasPair.Denomination)
 		if err != nil {
@@ -120,24 +122,26 @@ func (a *adapter) HandleEthGasDenomination() ([]string, error) {
 			return nil, err
 		}
 
-		inputData := gasPair.Endpoint + "@" + argsHex
-		tx, err := a.chainInteractor.CreateSignedTx(
-			[]byte(inputData),
-			gasPair.Address,
-			a.config.GasConfig.BatchTxGasLimit,
-		)
-		if err != nil {
-			log.Error("gas denomination: failed to sign transaction", "err", err.Error())
-			return nil, err
-		}
-
-		txHash, err := a.chainInteractor.SendTx(tx)
-		if err != nil {
-			log.Error("gas denomination: failed to send transaction", "err", err.Error())
-			return nil, err
-		}
-		txHashes = append(txHashes, txHash)
+		inputData = "@" + argsHex
 	}
+
+	tx, err := a.chainInteractor.CreateSignedTx(
+		[]byte(inputData),
+		a.config.GasStation.Address,
+		a.config.GasConfig.BatchTxGasLimit,
+	)
+	if err != nil {
+		log.Error("gas denomination: failed to sign transaction", "err", err.Error())
+		return nil, err
+	}
+
+	txHash, err := a.chainInteractor.SendTx(tx)
+	if err != nil {
+		log.Error("gas denomination: failed to send transaction", "err", err.Error())
+		return nil, err
+	}
+
+	txHashes = append(txHashes, txHash)
 	return txHashes, nil
 }
 
