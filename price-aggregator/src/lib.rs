@@ -83,6 +83,15 @@ pub trait PriceAggregator {
     #[endpoint]
     fn submit(&self, from: BoxedBytes, to: BoxedBytes, price: Self::BigUint) -> SCResult<()> {
         self.require_is_oracle()?;
+        self.submit_unchecked(from, to, price)
+    }
+
+    fn submit_unchecked(
+        &self,
+        from: BoxedBytes,
+        to: BoxedBytes,
+        price: Self::BigUint,
+    ) -> SCResult<()> {
         let token_pair = TokenPair { from, to };
         let mut submissions = self
             .submissions()
@@ -99,6 +108,23 @@ pub trait PriceAggregator {
                 oracle_status.total_submissions += 1;
             });
         self.create_new_round(token_pair, submissions)?;
+        Ok(())
+    }
+
+    #[endpoint(submitBatch)]
+    fn submit_batch(
+        &self,
+        #[var_args] submissions: MultiArgVec<MultiArg3<BoxedBytes, BoxedBytes, Self::BigUint>>,
+    ) -> SCResult<()> {
+        self.require_is_oracle()?;
+
+        for (from, to, price) in submissions
+            .iter()
+            .cloned()
+            .map(|submission| submission.into_tuple())
+        {
+            self.submit_unchecked(from, to, price)?;
+        }
         Ok(())
     }
 
