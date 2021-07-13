@@ -15,14 +15,14 @@ wasm-output-mode = [ "elrond-wasm-node",]
 path="../oracle"
 
 [dependencies.elrond-wasm]
-version = "0.17.1"
+version = "0.17"
 
 [dependencies.elrond-wasm-derive]
-version = "0.17.1"
+version = "0.17"
 
 [dependencies.elrond-wasm-node]
-version = "0.17.1"
+version = "0.17"
 optional = true
 
 [dev-dependencies.elrond-wasm-debug]
-version = "0.17.1"
+version = "0.17"
