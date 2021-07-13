@@ -1,7 +1,7 @@
 package interaction
 
 import (
-	"github.com/ElrondNetwork/elrond-sdk/erdgo"
+	"github.com/ElrondNetwork/elrond-sdk-erdgo"
 )
 
 func GetKeyPairFromPem(filepath string) ([]byte, string, error) {

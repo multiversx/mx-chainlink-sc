@@ -8,3 +8,8 @@
 **/*.interaction.json
 **/Cargo.lock
 **/*.rs.bk
+
+# user specific
+
+.idea
+.idea/*

@@ -125,7 +125,7 @@ func (eh *ExchangeAggregator) GetPrice(base, quote string) (float64, error) {
 			mut.Lock()
 			defer mut.Unlock()
 			if err != nil {
-				log.Error("failed to fetch price",
+				log.Debug("failed to fetch price",
 					"exchange", exchange.Name(),
 					"base", baseUpper,
 					"quote", quoteUpper,
