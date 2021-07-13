@@ -81,7 +81,7 @@ func (ws *webServer) processJobRunRequest(c *gin.Context) {
 		return
 	}
 
-	responseData, err := ws.adapter.HandlePriceFeedJob()
+	responseData, err := ws.adapter.HandleBatchPriceFeeds()
 	if err != nil {
 		errResponse(c, http.StatusInternalServerError)
 		return

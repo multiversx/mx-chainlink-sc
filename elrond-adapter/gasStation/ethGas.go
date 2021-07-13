@@ -44,16 +44,16 @@ type GasPair struct {
 
 type EthGasDenominator struct {
 	exchangeAggregator *aggregator.ExchangeAggregator
-	gasConfig          config.GasConfig
+	gasStationConfig   config.GasStationConfig
 }
 
 func NewEthGasDenominator(
 	exchangeAggregator *aggregator.ExchangeAggregator,
-	gasConfig config.GasConfig,
+	gasConfig config.GasStationConfig,
 ) *EthGasDenominator {
 	return &EthGasDenominator{
 		exchangeAggregator: exchangeAggregator,
-		gasConfig:          gasConfig,
+		gasStationConfig:   gasConfig,
 	}
 }
 
@@ -65,12 +65,12 @@ func (egd *EthGasDenominator) GasPricesDenominated() []GasPair {
 	}
 
 	var gasPairs []GasPair
-	for _, asset := range egd.gasConfig.TargetAssets {
+	for _, asset := range egd.gasStationConfig.TargetAssets {
 		gasPair := GasPair{
 			Base:     baseGwei,
 			Quote:    asset.Ticker,
-			Address:  egd.gasConfig.Address,
-			Endpoint: egd.gasConfig.Endpoint,
+			Address:  egd.gasStationConfig.Address,
+			Endpoint: egd.gasStationConfig.Endpoint,
 		}
 
 		if asset.Ticker == ethTicker {

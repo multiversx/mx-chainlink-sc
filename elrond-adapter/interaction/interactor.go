@@ -16,7 +16,6 @@ var log = logger.GetOrCreate("interaction")
 type BlockchainInteractor struct {
 	proxyUrl   string
 	chainID    string
-	gasLimit   uint64
 	gasPrice   uint64
 	privateKey []byte
 	publicKey  string
@@ -25,7 +24,7 @@ type BlockchainInteractor struct {
 	txMut      sync.Mutex
 }
 
-func NewBlockchainInteractor(chainInfo config.BlockchainInformation) (*BlockchainInteractor, error) {
+func NewBlockchainInteractor(chainInfo config.BlockchainConfig) (*BlockchainInteractor, error) {
 	sk, pk, err := GetKeyPairFromPem(chainInfo.PemPath)
 	if err != nil {
 		return nil, err
@@ -46,7 +45,6 @@ func NewBlockchainInteractor(chainInfo config.BlockchainInformation) (*Blockchai
 	return &BlockchainInteractor{
 		proxyUrl:   chainInfo.ProxyUrl,
 		chainID:    chainInfo.ChainID,
-		gasLimit:   chainInfo.GasLimit,
 		gasPrice:   chainInfo.GasPrice,
 		account:    *account,
 		privateKey: sk,
@@ -67,9 +65,9 @@ func (bi *BlockchainInteractor) SendTx(tx *data.Transaction) (string, error) {
 }
 
 func (bi *BlockchainInteractor) CreateSignedTx(
-	value string,
 	inputData []byte,
 	receiver string,
+	gasLimit uint64,
 ) (*data.Transaction, error) {
 	bi.txMut.Lock()
 	defer bi.txMut.Unlock()
@@ -88,14 +86,14 @@ func (bi *BlockchainInteractor) CreateSignedTx(
 	}
 
 	tx := &data.Transaction{
-		Value:    value,
+		Value:    "0",
 		RcvAddr:  receiver,
 		Data:     inputData,
 		SndAddr:  account.Address,
 		Nonce:    bi.account.Nonce,
-		GasPrice: bi.gasPrice,
-		GasLimit: bi.gasLimit,
 		ChainID:  bi.chainID,
+		GasPrice: bi.gasPrice,
+		GasLimit: gasLimit,
 		Version:  1,
 		Options:  0,
 	}

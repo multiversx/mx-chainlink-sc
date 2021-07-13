@@ -28,8 +28,6 @@ var log = logger.GetOrCreate("aggregator")
 type PairData struct {
 	Base            string
 	Quote           string
-	ScAddress       string
-	Endpoint        string
 	PriceMultiplied string
 }
 
@@ -79,8 +77,6 @@ func (eh *ExchangeAggregator) GetPricesForPairs() []PairData {
 		pairData := PairData{
 			Base:            pair.Base,
 			Quote:           pair.Quote,
-			ScAddress:       pair.ScAddress,
-			Endpoint:        pair.Endpoint,
 			PriceMultiplied: eh.MultiplyFloat64CastStr(currPrice),
 		}
 
