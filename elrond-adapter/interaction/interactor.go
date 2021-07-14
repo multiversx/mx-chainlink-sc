@@ -3,15 +3,21 @@ package interaction
 import (
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/ElrondNetwork/elrond-adapter/config"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
+	"github.com/ElrondNetwork/elrond-go/data/transaction"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/blockchain"
 	"github.com/ElrondNetwork/elrond-sdk-erdgo/data"
 )
 
 var log = logger.GetOrCreate("interaction")
+
+const (
+	waitForTxDuration = time.Second * 2
+)
 
 type BlockchainInteractor struct {
 	proxyUrl   string
@@ -106,6 +112,25 @@ func (bi *BlockchainInteractor) CreateSignedTx(
 
 	bi.account.Nonce++
 	return tx, nil
+}
+
+func (bi *BlockchainInteractor) WaitTxExecutionCheckStatus(txHash string) (bool, error) {
+	for {
+		time.Sleep(waitForTxDuration)
+		status, err := bi.proxy.GetTransactionStatus(txHash)
+		if err != nil {
+			return false, err
+		}
+
+		switch status {
+		case transaction.TxStatusPending.String():
+			continue
+		case transaction.TxStatusSuccess.String():
+			return true, nil
+		case transaction.TxStatusInvalid.String(), transaction.TxStatusFail.String():
+			return false, nil
+		}
+	}
 }
 
 func (bi *BlockchainInteractor) getAccount() (*data.Account, error) {
