@@ -17,12 +17,12 @@
 
 [PriceFeedBatch]
     Endpoint = "submitBatch"
-    Address = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz"
+    Address = "erd1qqqqqqqqqqqqqpgqc0e39h7jms7mxw8zx43d6y9m4da5sjvku00s9s9wc3"
     BatchSize = 100
 
 [GasStation]
     Endpoint = "submitBatch"
-    Address = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz"
+    Address = "erd1qqqqqqqqqqqqqpgqc0e39h7jms7mxw8zx43d6y9m4da5sjvku00s9s9wc3"
     TargetAssets = [
         { Ticker = "EGLD", Decimals = 18 },
         { Ticker = "ETH", Decimals = 18 },

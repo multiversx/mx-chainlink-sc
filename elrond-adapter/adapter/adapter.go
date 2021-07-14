@@ -170,7 +170,7 @@ func (a *adapter) prepareInputDataForPairsBatches(pairs []aggregator.PairData) (
 			if err != nil {
 				return nil, err
 			}
-			batchInputData = "@" + argsHex
+			batchInputData += "@" + argsHex
 		}
 		inputData = append(inputData, batchInputData)
 	}
