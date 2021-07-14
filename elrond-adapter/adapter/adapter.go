@@ -130,7 +130,7 @@ func (a *adapter) HandleEthGasDenomination() ([]string, error) {
 			return nil, err
 		}
 
-		inputData = "@" + argsHex
+		inputData += "@" + argsHex
 	}
 
 	tx, err := a.chainInteractor.CreateSignedTx(
