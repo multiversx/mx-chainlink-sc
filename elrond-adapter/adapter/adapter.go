@@ -3,6 +3,7 @@ package adapter
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ElrondNetwork/elrond-adapter/aggregator"
@@ -50,32 +51,39 @@ func (a *adapter) HandleBatchPriceFeeds() ([]string, error) {
 	var txHashes []string
 
 	pairs := a.exchangeAggregator.GetPricesForPairs()
-	inputData := a.config.PriceFeedBatch.Endpoint
-	for _, pair := range pairs {
-		argsHex, err := prepareJobResultArgsHex(pair.Base, pair.Quote, pair.PriceMultiplied)
-		if err != nil {
-			log.Error("price job: failed to prepare args hex", "err", err.Error())
-			return nil, err
+	inputData, err := a.prepareInputDataForPairsBatches(pairs)
+	if err != nil {
+		log.Error("price job: failed to parse arg hex", "err", err.Error())
+		return nil, err
+	}
+
+	for _, data := range inputData {
+		tx, innerErr := a.chainInteractor.CreateSignedTx(
+			[]byte(data),
+			a.config.PriceFeedBatch.Address,
+			a.config.GasConfig.BatchTxGasLimit,
+		)
+		if innerErr != nil {
+			log.Error("price job: failed to sign transaction", "err", innerErr.Error())
+			return nil, innerErr
 		}
-		inputData = "@" + argsHex
+
+		txHash, innerErr := a.chainInteractor.SendTx(tx)
+		if innerErr != nil {
+			log.Error("price job: failed to send transaction", "err", innerErr.Error())
+			return nil, innerErr
+		}
+
+		ok, innerErr := a.chainInteractor.WaitTxExecutionCheckStatus(txHash)
+		if innerErr != nil {
+			return nil, innerErr
+		}
+		if !ok {
+			return nil, errors.New(fmt.Sprintf("price job: transaction failed. Hash: %s", txHash))
+		}
+		txHashes = append(txHashes, txHash)
 	}
 
-	tx, err := a.chainInteractor.CreateSignedTx(
-		[]byte(inputData),
-		a.config.PriceFeedBatch.Address,
-		a.config.GasConfig.BatchTxGasLimit,
-	)
-	if err != nil {
-		log.Error("price job: failed to sign transaction", "err", err.Error())
-		return nil, err
-	}
-	txHash, err := a.chainInteractor.SendTx(tx)
-	if err != nil {
-		log.Error("price job: failed to send transaction", "err", err.Error())
-		return nil, err
-	}
-
-	txHashes = append(txHashes, txHash)
 	return txHashes, nil
 }
 
@@ -143,6 +151,31 @@ func (a *adapter) HandleEthGasDenomination() ([]string, error) {
 
 	txHashes = append(txHashes, txHash)
 	return txHashes, nil
+}
+
+func (a *adapter) prepareInputDataForPairsBatches(pairs []aggregator.PairData) ([]string, error) {
+	var inputData []string
+
+	batchSize := a.config.PriceFeedBatch.BatchSize
+	for i := 0; i < len(pairs); i += batchSize {
+		batchEnd := i + batchSize
+		if batchEnd > len(pairs) {
+			batchEnd = len(pairs)
+		}
+
+		currentBatch := pairs[i:batchEnd]
+		batchInputData := a.config.PriceFeedBatch.Endpoint
+		for _, pair := range currentBatch {
+			argsHex, err := prepareJobResultArgsHex(pair.Base, pair.Quote, pair.PriceMultiplied)
+			if err != nil {
+				return nil, err
+			}
+			batchInputData = "@" + argsHex
+		}
+		inputData = append(inputData, batchInputData)
+	}
+
+	return inputData, nil
 }
 
 func prepareJobResultArgsHex(base, quote, price string) (string, error) {

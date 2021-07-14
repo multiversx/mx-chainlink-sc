@@ -9,14 +9,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var getGasDenominator = func(gasConfig config.GasConfig) *EthGasDenominator {
+var getGasDenominator = func(gasStation config.GasStationConfig) *EthGasDenominator {
 	exchange := aggregator.NewExchangeAggregator(config.ExchangeConfig{})
-	return NewEthGasDenominator(exchange, gasConfig)
+	return NewEthGasDenominator(exchange, gasStation)
 }
 
 func TestEthGasDenominator_GasPriceDenominated(t *testing.T) {
 	t.Parallel()
-	gasDenom := getGasDenominator(config.GasConfig{
+	gasDenom := getGasDenominator(config.GasStationConfig{
 		TargetAssets: []config.GasTargetAsset{
 			{
 				Ticker:   "EGLD",
@@ -30,7 +30,7 @@ func TestEthGasDenominator_GasPriceDenominated(t *testing.T) {
 
 func TestEthGasDenominator_GasPricesDenominatedETH(t *testing.T) {
 	t.Parallel()
-	gasDenom := getGasDenominator(config.GasConfig{
+	gasDenom := getGasDenominator(config.GasStationConfig{
 		TargetAssets: []config.GasTargetAsset{
 			{
 				Ticker:   "ETH",
@@ -46,7 +46,7 @@ func TestEthGasDenominator_GasPricesDenominatedETH(t *testing.T) {
 func TestEthGasDenominator_GasPricesDenominatedMultipleAssets(t *testing.T) {
 	t.Parallel()
 
-	gasDenom := getGasDenominator(config.GasConfig{
+	gasDenom := getGasDenominator(config.GasStationConfig{
 		TargetAssets: []config.GasTargetAsset{
 			{
 				Ticker:   "EGLD",

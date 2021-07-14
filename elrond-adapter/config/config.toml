@@ -18,6 +18,7 @@
 [PriceFeedBatch]
     Endpoint = "submitBatch"
     Address = "erd1qqqqqqqqqqqqqpgq2j35zktgvhazpvzrr9m8649gnqz53uydu00sflu9rz"
+    BatchSize = 100
 
 [GasStation]
     Endpoint = "submitBatch"
