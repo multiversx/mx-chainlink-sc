@@ -2,13 +2,13 @@ package gasStation
 
 import (
 	"fmt"
-	"github.com/ElrondNetwork/elrond-adapter/data"
 	"math"
 	"math/big"
 	"strconv"
 
 	"github.com/ElrondNetwork/elrond-adapter/aggregator"
 	"github.com/ElrondNetwork/elrond-adapter/config"
+	"github.com/ElrondNetwork/elrond-adapter/data"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 )
 

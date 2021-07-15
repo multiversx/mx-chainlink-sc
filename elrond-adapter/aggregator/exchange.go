@@ -1,12 +1,12 @@
 package aggregator
 
 import (
-	"github.com/ElrondNetwork/elrond-adapter/data"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/ElrondNetwork/elrond-adapter/config"
+	"github.com/ElrondNetwork/elrond-adapter/data"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 )
 
