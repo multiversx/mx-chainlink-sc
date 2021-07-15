@@ -17,12 +17,12 @@
 
 [PriceFeedBatch]
     Endpoint = "submitBatch"
-    Address = "erd1qqqqqqqqqqqqqpgqc0e39h7jms7mxw8zx43d6y9m4da5sjvku00s9s9wc3"
-    BatchSize = 100
+    Address = "erd1qqqqqqqqqqqqqpgqs8gtvhtt6k7h6khkmudzd6y4z0r08rx4u00svnnxt2"
+    BatchSize = 10
 
 [GasStation]
     Endpoint = "submitBatch"
-    Address = "erd1qqqqqqqqqqqqqpgqc0e39h7jms7mxw8zx43d6y9m4da5sjvku00s9s9wc3"
+    Address = "erd1qqqqqqqqqqqqqpgqs8gtvhtt6k7h6khkmudzd6y4z0r08rx4u00svnnxt2"
     TargetAssets = [
         { Ticker = "EGLD", Decimals = 18 },
         { Ticker = "ETH", Decimals = 18 },
@@ -37,6 +37,13 @@
         { Base = "EGLD", Quote = "USD" },
         { Base = "ETH", Quote = "USD" },
         { Base = "USDC", Quote = "USD" },
+        { Base = "BTC", Quote = "USD" },
+        { Base = "AAVE", Quote = "USD" },
+        { Base = "LINK", Quote = "USD" },
+        { Base = "SOL", Quote = "USD" },
+        { Base = "SNX", Quote = "USD" },
+        { Base = "YFI", Quote = "USD" },
+        { Base = "UNI", Quote = "USD" },
 ]
 
 
