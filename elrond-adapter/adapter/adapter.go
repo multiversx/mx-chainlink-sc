@@ -48,40 +48,17 @@ func (a *adapter) HandlePriceFeed(data models.RequestData) (string, error) {
 }
 
 func (a *adapter) HandleBatchPriceFeeds() ([]string, error) {
-	var txHashes []string
-
 	pairs := a.exchangeAggregator.GetPricesForPairs()
-	inputData, err := a.prepareInputDataForPairsBatches(pairs)
+	inputData, err := a.prepareInputDataForPairsBatches(pairs, a.config.PriceFeedBatch.Endpoint)
 	if err != nil {
 		log.Error("price job: failed to parse arg hex", "err", err.Error())
 		return nil, err
 	}
 
-	for _, data := range inputData {
-		tx, innerErr := a.chainInteractor.CreateSignedTx(
-			[]byte(data),
-			a.config.PriceFeedBatch.Address,
-			a.config.GasConfig.BatchTxGasLimit,
-		)
-		if innerErr != nil {
-			log.Error("price job: failed to sign transaction", "err", innerErr.Error())
-			return nil, innerErr
-		}
-
-		txHash, innerErr := a.chainInteractor.SendTx(tx)
-		if innerErr != nil {
-			log.Error("price job: failed to send transaction", "err", innerErr.Error())
-			return nil, innerErr
-		}
-
-		ok, innerErr := a.chainInteractor.WaitTxExecutionCheckStatus(txHash)
-		if innerErr != nil {
-			return nil, innerErr
-		}
-		if !ok {
-			return nil, errors.New(fmt.Sprintf("price job: transaction failed. Hash: %s", txHash))
-		}
-		txHashes = append(txHashes, txHash)
+	txHashes, err := a.sendBatchTxs(inputData, a.config.PriceFeedBatch.Address)
+	if err != nil {
+		log.Error("price job: failed to send tx", "err", err.Error())
+		return nil, err
 	}
 
 	return txHashes, nil
@@ -119,41 +96,54 @@ func (a *adapter) HandleWriteFeed(data models.RequestData) (string, error) {
 }
 
 func (a *adapter) HandleEthGasDenomination() ([]string, error) {
-	var txHashes []string
-
 	gasPairs := a.ethGasDenominator.GasPricesDenominated()
-	inputData := a.config.GasStation.Endpoint
-	for _, gasPair := range gasPairs {
-		argsHex, err := prepareJobResultArgsHex(gasPair.Base, gasPair.Quote, gasPair.Denomination)
-		if err != nil {
-			log.Error("gas denomination: failed to parse arg hex", "err", err.Error())
-			return nil, err
-		}
-
-		inputData += "@" + argsHex
-	}
-
-	tx, err := a.chainInteractor.CreateSignedTx(
-		[]byte(inputData),
-		a.config.GasStation.Address,
-		a.config.GasConfig.BatchTxGasLimit,
-	)
+	inputData, err := a.prepareInputDataForPairsBatches(gasPairs, a.config.GasStation.Endpoint)
 	if err != nil {
-		log.Error("gas denomination: failed to sign transaction", "err", err.Error())
+		log.Error("gas denomination: failed to parse arg hex", "err", err.Error())
 		return nil, err
 	}
 
-	txHash, err := a.chainInteractor.SendTx(tx)
+	txHashes, err := a.sendBatchTxs(inputData, a.config.GasStation.Address)
 	if err != nil {
-		log.Error("gas denomination: failed to send transaction", "err", err.Error())
+		log.Error("gas denomination: failed to send tx", "err", err.Error())
 		return nil, err
 	}
 
-	txHashes = append(txHashes, txHash)
 	return txHashes, nil
 }
 
-func (a *adapter) prepareInputDataForPairsBatches(pairs []aggregator.PairData) ([]string, error) {
+func (a *adapter) sendBatchTxs(inputData []string, scAddress string) ([]string, error) {
+	var txHashes []string
+
+	for _, data := range inputData {
+		tx, innerErr := a.chainInteractor.CreateSignedTx(
+			[]byte(data),
+			scAddress,
+			a.config.GasConfig.BatchTxGasLimit,
+		)
+		if innerErr != nil {
+			return nil, innerErr
+		}
+
+		txHash, innerErr := a.chainInteractor.SendTx(tx)
+		if innerErr != nil {
+			return nil, innerErr
+		}
+
+		ok, innerErr := a.chainInteractor.WaitTxExecutionCheckStatus(txHash)
+		if innerErr != nil {
+			return nil, innerErr
+		}
+		if !ok {
+			return nil, errors.New(fmt.Sprintf("price job: transaction failed. Hash: %s", txHash))
+		}
+		txHashes = append(txHashes, txHash)
+	}
+
+	return txHashes, nil
+}
+
+func (a *adapter) prepareInputDataForPairsBatches(pairs []models.FeedPair, endpoint string) ([]string, error) {
 	var inputData []string
 
 	batchSize := a.config.PriceFeedBatch.BatchSize
@@ -164,9 +154,9 @@ func (a *adapter) prepareInputDataForPairsBatches(pairs []aggregator.PairData) (
 		}
 
 		currentBatch := pairs[i:batchEnd]
-		batchInputData := a.config.PriceFeedBatch.Endpoint
+		batchInputData := endpoint
 		for _, pair := range currentBatch {
-			argsHex, err := prepareJobResultArgsHex(pair.Base, pair.Quote, pair.PriceMultiplied)
+			argsHex, err := prepareJobResultArgsHex(pair.Base, pair.Quote, pair.Value)
 			if err != nil {
 				return nil, err
 			}

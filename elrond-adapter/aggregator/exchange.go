@@ -1,6 +1,7 @@
 package aggregator
 
 import (
+	"github.com/ElrondNetwork/elrond-adapter/data"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,12 +25,6 @@ type Exchange interface {
 }
 
 var log = logger.GetOrCreate("aggregator")
-
-type PairData struct {
-	Base            string
-	Quote           string
-	PriceMultiplied string
-}
 
 type ExchangeAggregator struct {
 	exchanges []Exchange
@@ -60,8 +55,8 @@ func NewExchangeAggregator(exchangeConfig config.ExchangeConfig) *ExchangeAggreg
 	}
 }
 
-func (eh *ExchangeAggregator) GetPricesForPairs() []PairData {
-	var results []PairData
+func (eh *ExchangeAggregator) GetPricesForPairs() []data.FeedPair {
+	var results []data.FeedPair
 	for _, pair := range eh.config.Pairs {
 		currPrice, err := eh.GetPrice(pair.Base, pair.Quote)
 		if err != nil {
@@ -74,17 +69,17 @@ func (eh *ExchangeAggregator) GetPricesForPairs() []PairData {
 		}
 
 		lastPrice := eh.prices[pair.Base]
-		pairData := PairData{
-			Base:            pair.Base,
-			Quote:           pair.Quote,
-			PriceMultiplied: eh.MultiplyFloat64CastStr(currPrice),
+		pairData := data.FeedPair{
+			Base:  pair.Base,
+			Quote: pair.Quote,
+			Value: eh.MultiplyFloat64CastStr(currPrice),
 		}
 
 		log.Info("aggregated price for pair",
 			"base", pair.Base,
 			"quote", pair.Quote,
 			"price raw", currPrice,
-			"price multiplied", pairData.PriceMultiplied,
+			"price multiplied", pairData.Value,
 		)
 
 		if lastPrice == 0 {
