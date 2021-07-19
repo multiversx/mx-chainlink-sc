@@ -1,7 +1,6 @@
 package aggregator
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -33,7 +32,7 @@ func (b *Cryptocom) FetchPrice(base, quote string) (float64, error) {
 		return -1, err
 	}
 	if cpr.Result.Data.Price == 0 {
-		return -1, errors.New("")
+		return -1, InvalidResponseDataErr
 	}
 	return cpr.Result.Data.Price, nil
 }

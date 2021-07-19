@@ -19,3 +19,9 @@ type RequestData struct {
 	Function  string `json:"function"`
 	RoundID   string `json:"round_id"`
 }
+
+type FeedPair struct {
+	Base  string `json:"base"`
+	Quote string `json:"quote"`
+	Value string `json:"value"`
+}

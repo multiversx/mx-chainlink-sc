@@ -12,19 +12,25 @@ const configPath = "./config/config.toml"
 var log = logger.GetOrCreate("config")
 
 type GeneralConfig struct {
-	Blockchain BlockchainInformation
-	Contract   ContractInformation
-	Server     ServerConfig
-	Exchange   ExchangeConfig
-	GasConfig  GasConfig
+	Blockchain     BlockchainConfig
+	GasConfig      GasConfig
+	Server         ServerConfig
+	Contract       ContractInformation
+	PriceFeedBatch PriceFeedBatchConfig
+	GasStation     GasStationConfig
+	Exchange       ExchangeConfig
 }
 
-type BlockchainInformation struct {
+type BlockchainConfig struct {
 	GasPrice uint64
-	GasLimit uint64
 	ProxyUrl string
 	ChainID  string
 	PemPath  string
+}
+
+type GasConfig struct {
+	BatchTxGasLimit uint64
+	FeedTxGasLimit  uint64
 }
 
 type ContractInformation struct {
@@ -44,16 +50,19 @@ type ExchangeConfig struct {
 }
 
 type PairsConfig struct {
-	Base      string
-	Quote     string
-	ScAddress string
-	Endpoint  string
+	Base  string
+	Quote string
 }
 
-type GasConfig struct {
+type PriceFeedBatchConfig struct {
+	Endpoint  string
+	Address   string
+	BatchSize int
+}
+
+type GasStationConfig struct {
 	Address      string
 	Endpoint     string
-	TxPremium    uint8
 	TargetAssets []GasTargetAsset
 }
 

@@ -3,6 +3,7 @@ package adapter
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"math/big"
 
 	"github.com/ElrondNetwork/elrond-adapter/aggregator"
@@ -29,7 +30,7 @@ func NewAdapter(config config.GeneralConfig) (*adapter, error) {
 		return nil, err
 	}
 	exchangeAggregator := aggregator.NewExchangeAggregator(config.Exchange)
-	ethGasDenominator := gasStation.NewEthGasDenominator(exchangeAggregator, config.GasConfig)
+	ethGasDenominator := gasStation.NewEthGasDenominator(exchangeAggregator, config.GasStation)
 	return &adapter{
 		chainInteractor:    interactor,
 		exchangeAggregator: exchangeAggregator,
@@ -46,27 +47,18 @@ func (a *adapter) HandlePriceFeed(data models.RequestData) (string, error) {
 	return a.exchangeAggregator.MultiplyFloat64CastStr(price), nil
 }
 
-func (a *adapter) HandlePriceFeedJob() ([]string, error) {
-	var txHashes []string
+func (a *adapter) HandleBatchPriceFeeds() ([]string, error) {
 	pairs := a.exchangeAggregator.GetPricesForPairs()
-	for _, pair := range pairs {
-		argsHex, err := prepareJobResultArgsHex(pair.Base, pair.Quote, pair.PriceMultiplied)
-		if err != nil {
-			log.Error("price job: failed to prepare args hex", "err", err.Error())
-			break
-		}
-		inputData := pair.Endpoint + "@" + argsHex
-		tx, err := a.chainInteractor.CreateSignedTx("0", []byte(inputData), pair.ScAddress)
-		if err != nil {
-			log.Error("price job: failed to sign transaction", "err", err.Error())
-			break
-		}
-		txHash, err := a.chainInteractor.SendTx(tx)
-		if err != nil {
-			log.Error("price job: failed to send transaction", "err", err.Error())
-			break
-		}
-		txHashes = append(txHashes, txHash)
+	inputData, err := a.prepareInputDataForPairsBatches(pairs, a.config.PriceFeedBatch.Endpoint)
+	if err != nil {
+		log.Error("price job: failed to parse arg hex", "err", err.Error())
+		return nil, err
+	}
+
+	txHashes, err := a.sendBatchTxs(inputData, a.config.PriceFeedBatch.Address)
+	if err != nil {
+		log.Error("price job: failed to send tx", "err", err.Error())
+		return nil, err
 	}
 
 	return txHashes, nil
@@ -88,7 +80,7 @@ func (a *adapter) HandleWriteFeed(data models.RequestData) (string, error) {
 		return "", err
 	}
 	inputData := scEndpoint + "@" + argsHex
-	tx, err := a.chainInteractor.CreateSignedTx("0", []byte(inputData), scAddress)
+	tx, err := a.chainInteractor.CreateSignedTx([]byte(inputData), scAddress, a.config.GasConfig.FeedTxGasLimit)
 	if err != nil {
 		log.Error("write job: failed to sign transaction", "err", err.Error())
 		return "", err
@@ -104,30 +96,76 @@ func (a *adapter) HandleWriteFeed(data models.RequestData) (string, error) {
 }
 
 func (a *adapter) HandleEthGasDenomination() ([]string, error) {
-	var txHashes []string
 	gasPairs := a.ethGasDenominator.GasPricesDenominated()
-	for _, gasPair := range gasPairs {
-		argsHex, err := prepareJobResultArgsHex(gasPair.Base, gasPair.Quote, gasPair.Denomination)
-		if err != nil {
-			log.Error("gas denomination: failed to parse arg hex", "err", err.Error())
-			return nil, err
+	inputData, err := a.prepareInputDataForPairsBatches(gasPairs, a.config.GasStation.Endpoint)
+	if err != nil {
+		log.Error("gas denomination: failed to parse arg hex", "err", err.Error())
+		return nil, err
+	}
+
+	txHashes, err := a.sendBatchTxs(inputData, a.config.GasStation.Address)
+	if err != nil {
+		log.Error("gas denomination: failed to send tx", "err", err.Error())
+		return nil, err
+	}
+
+	return txHashes, nil
+}
+
+func (a *adapter) sendBatchTxs(inputData []string, scAddress string) ([]string, error) {
+	var txHashes []string
+
+	for _, data := range inputData {
+		tx, innerErr := a.chainInteractor.CreateSignedTx(
+			[]byte(data),
+			scAddress,
+			a.config.GasConfig.BatchTxGasLimit,
+		)
+		if innerErr != nil {
+			return nil, innerErr
 		}
 
-		inputData := gasPair.Endpoint + "@" + argsHex
-		tx, err := a.chainInteractor.CreateSignedTx("0", []byte(inputData), gasPair.Address)
-		if err != nil {
-			log.Error("gas denomination: failed to sign transaction", "err", err.Error())
-			return nil, err
+		txHash, innerErr := a.chainInteractor.SendTx(tx)
+		if innerErr != nil {
+			return nil, innerErr
 		}
 
-		txHash, err := a.chainInteractor.SendTx(tx)
-		if err != nil {
-			log.Error("gas denomination: failed to send transaction", "err", err.Error())
-			return nil, err
+		ok, innerErr := a.chainInteractor.WaitTxExecutionCheckStatus(txHash)
+		if innerErr != nil {
+			return nil, innerErr
+		}
+		if !ok {
+			return nil, errors.New(fmt.Sprintf("price job: transaction failed. Hash: %s", txHash))
 		}
 		txHashes = append(txHashes, txHash)
 	}
+
 	return txHashes, nil
+}
+
+func (a *adapter) prepareInputDataForPairsBatches(pairs []models.FeedPair, endpoint string) ([]string, error) {
+	var inputData []string
+
+	batchSize := a.config.PriceFeedBatch.BatchSize
+	for i := 0; i < len(pairs); i += batchSize {
+		batchEnd := i + batchSize
+		if batchEnd > len(pairs) {
+			batchEnd = len(pairs)
+		}
+
+		currentBatch := pairs[i:batchEnd]
+		batchInputData := endpoint
+		for _, pair := range currentBatch {
+			argsHex, err := prepareJobResultArgsHex(pair.Base, pair.Quote, pair.Value)
+			if err != nil {
+				return nil, err
+			}
+			batchInputData += "@" + argsHex
+		}
+		inputData = append(inputData, batchInputData)
+	}
+
+	return inputData, nil
 }
 
 func prepareJobResultArgsHex(base, quote, price string) (string, error) {

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ElrondNetwork/elrond-adapter/aggregator"
 	"github.com/ElrondNetwork/elrond-adapter/config"
+	"github.com/ElrondNetwork/elrond-adapter/data"
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 )
 
@@ -34,48 +35,38 @@ type GasData struct {
 	Slow     uint64 `json:"slow"`
 }
 
-type GasPair struct {
-	Base         string
-	Quote        string
-	Denomination string
-	Address      string
-	Endpoint     string
-}
-
 type EthGasDenominator struct {
 	exchangeAggregator *aggregator.ExchangeAggregator
-	gasConfig          config.GasConfig
+	gasStationConfig   config.GasStationConfig
 }
 
 func NewEthGasDenominator(
 	exchangeAggregator *aggregator.ExchangeAggregator,
-	gasConfig config.GasConfig,
+	gasConfig config.GasStationConfig,
 ) *EthGasDenominator {
 	return &EthGasDenominator{
 		exchangeAggregator: exchangeAggregator,
-		gasConfig:          gasConfig,
+		gasStationConfig:   gasConfig,
 	}
 }
 
-func (egd *EthGasDenominator) GasPricesDenominated() []GasPair {
+func (egd *EthGasDenominator) GasPricesDenominated() []data.FeedPair {
 	gasData, err := egd.gasPriceGwei()
 	if err != nil {
 		log.Error("failed to fetch gwei", "err", err.Error())
-		return []GasPair{}
+		return []data.FeedPair{}
 	}
 
-	var gasPairs []GasPair
-	for _, asset := range egd.gasConfig.TargetAssets {
-		gasPair := GasPair{
-			Base:     baseGwei,
-			Quote:    asset.Ticker,
-			Address:  egd.gasConfig.Address,
-			Endpoint: egd.gasConfig.Endpoint,
+	var gasPairs []data.FeedPair
+	for _, asset := range egd.gasStationConfig.TargetAssets {
+		gasPair := data.FeedPair{
+			Base:  baseGwei,
+			Quote: asset.Ticker,
 		}
 
 		if asset.Ticker == ethTicker {
 			log.Info("found ETH target ticker, pushing without denominating", "gwei", gasData.Fast)
-			gasPair.Denomination = strconv.FormatUint(gasData.Fast, 10)
+			gasPair.Value = strconv.FormatUint(gasData.Fast, 10)
 			gasPairs = append(gasPairs, gasPair)
 			continue
 		}
@@ -91,7 +82,7 @@ func (egd *EthGasDenominator) GasPricesDenominated() []GasPair {
 			"gwei fast", gasData.Fast,
 			"result", denominatedAmount,
 		)
-		gasPair.Denomination = denominatedAmount.String()
+		gasPair.Value = denominatedAmount.String()
 		gasPairs = append(gasPairs, gasPair)
 	}
 	return gasPairs
