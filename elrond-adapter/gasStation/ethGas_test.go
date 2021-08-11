@@ -40,7 +40,7 @@ func TestEthGasDenominator_GasPricesDenominatedETH(t *testing.T) {
 	})
 	gwei, _ := gasDenom.gasPriceGwei()
 	pairs := gasDenom.GasPricesDenominated()
-	require.True(t, pairs[0].Denomination == strconv.FormatUint(gwei.Fast, 10))
+	require.True(t, pairs[0].Value == strconv.FormatUint(gwei.Fast, 10))
 }
 
 func TestEthGasDenominator_GasPricesDenominatedMultipleAssets(t *testing.T) {
@@ -64,9 +64,9 @@ func TestEthGasDenominator_GasPricesDenominatedMultipleAssets(t *testing.T) {
 	pairs := gasDenom.GasPricesDenominated()
 	for _, pair := range pairs {
 		if pair.Base == "ETH" {
-			require.True(t, pair.Denomination == strconv.FormatUint(gwei.Fast, 10))
+			require.True(t, pair.Value == strconv.FormatUint(gwei.Fast, 10))
 			continue
 		}
-		require.True(t, pair.Denomination != "")
+		require.True(t, pair.Value != "")
 	}
 }

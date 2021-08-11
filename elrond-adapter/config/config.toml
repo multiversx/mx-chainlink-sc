@@ -5,7 +5,7 @@
     PemPath = "./config/owner.pem"
 
 [GasConfig]
-    BatchTxGasLimit = 150_000_000
+    BatchTxGasLimit = 215_000_000
     FeedTxGasLimit = 30_000_000
 
 [Server]
@@ -17,12 +17,20 @@
 
 [PriceFeedBatch]
     Endpoint = "submitBatch"
-    Address = "erd1qqqqqqqqqqqqqpgqs8gtvhtt6k7h6khkmudzd6y4z0r08rx4u00svnnxt2"
+    Addresses = [
+        "erd1qqqqqqqqqqqqqpgqdegftahwl7vv2a9azusjl9cmx995nzv9707q7n7suc",
+        "erd1qqqqqqqqqqqqqpgqs8gtvhtt6k7h6khkmudzd6y4z0r08rx4u00svnnxt2",
+        "erd1qqqqqqqqqqqqqpgq9k5uafq4ya9ptq9y8795nmh9wysex7jwcvpqkhgnu7"
+    ]
     BatchSize = 10
 
 [GasStation]
     Endpoint = "submitBatch"
-    Address = "erd1qqqqqqqqqqqqqpgqs8gtvhtt6k7h6khkmudzd6y4z0r08rx4u00svnnxt2"
+    Addresses = [
+        "erd1qqqqqqqqqqqqqpgqdegftahwl7vv2a9azusjl9cmx995nzv9707q7n7suc",
+        "erd1qqqqqqqqqqqqqpgqs8gtvhtt6k7h6khkmudzd6y4z0r08rx4u00svnnxt2",
+        "erd1qqqqqqqqqqqqqpgq9k5uafq4ya9ptq9y8795nmh9wysex7jwcvpqkhgnu7"
+    ]
     TargetAssets = [
         { Ticker = "EGLD", Decimals = 18 },
         { Ticker = "ETH", Decimals = 18 },

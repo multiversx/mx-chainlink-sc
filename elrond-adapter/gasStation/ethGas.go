@@ -1,6 +1,7 @@
 package gasStation
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"math/big"
@@ -108,6 +109,11 @@ func (egd *EthGasDenominator) denominateForAsset(
 
 	targetUnit := math.Pow(10, float64(asset.Decimals))
 	denominatedAmount := int64(nominalAmount * targetUnit)
+
+	if denominatedAmount == 0 {
+		return nil, errors.New("zero denomination")
+	}
+
 	return big.NewInt(denominatedAmount), nil
 }
 

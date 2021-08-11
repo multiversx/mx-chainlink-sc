@@ -24,3 +24,4 @@ logs
 .env
 .env.dev
 .env.testing
+vendor

@@ -56,13 +56,13 @@ type PairsConfig struct {
 
 type PriceFeedBatchConfig struct {
 	Endpoint  string
-	Address   string
+	Addresses []string
 	BatchSize int
 }
 
 type GasStationConfig struct {
-	Address      string
 	Endpoint     string
+	Addresses    []string
 	TargetAssets []GasTargetAsset
 }
 

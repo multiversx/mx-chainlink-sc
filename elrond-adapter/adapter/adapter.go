@@ -47,23 +47,6 @@ func (a *adapter) HandlePriceFeed(data models.RequestData) (string, error) {
 	return a.exchangeAggregator.MultiplyFloat64CastStr(price), nil
 }
 
-func (a *adapter) HandleBatchPriceFeeds() ([]string, error) {
-	pairs := a.exchangeAggregator.GetPricesForPairs()
-	inputData, err := a.prepareInputDataForPairsBatches(pairs, a.config.PriceFeedBatch.Endpoint)
-	if err != nil {
-		log.Error("price job: failed to parse arg hex", "err", err.Error())
-		return nil, err
-	}
-
-	txHashes, err := a.sendBatchTxs(inputData, a.config.PriceFeedBatch.Address)
-	if err != nil {
-		log.Error("price job: failed to send tx", "err", err.Error())
-		return nil, err
-	}
-
-	return txHashes, nil
-}
-
 func (a *adapter) HandleWriteFeed(data models.RequestData) (string, error) {
 	scEndpoint := data.Function
 	scAddress := data.ScAddress
@@ -95,6 +78,27 @@ func (a *adapter) HandleWriteFeed(data models.RequestData) (string, error) {
 	return txHash, nil
 }
 
+func (a *adapter) HandleBatchPriceFeeds() ([]string, error) {
+	pairs := a.exchangeAggregator.GetPricesForPairs()
+	inputData, err := a.prepareInputDataForPairsBatches(pairs, a.config.PriceFeedBatch.Endpoint)
+	if err != nil {
+		log.Error("price job: failed to parse arg hex", "err", err.Error())
+		return nil, err
+	}
+
+	var txHashes []string
+	for _, address := range a.config.PriceFeedBatch.Addresses {
+		batchTxHashes, innerErr := a.sendBatchTxs(inputData, address)
+		if innerErr != nil {
+			log.Error("price job: failed to send tx", "err", innerErr.Error())
+			return nil, innerErr
+		}
+		txHashes = append(txHashes, batchTxHashes...)
+	}
+
+	return txHashes, nil
+}
+
 func (a *adapter) HandleEthGasDenomination() ([]string, error) {
 	gasPairs := a.ethGasDenominator.GasPricesDenominated()
 	inputData, err := a.prepareInputDataForPairsBatches(gasPairs, a.config.GasStation.Endpoint)
@@ -103,10 +107,14 @@ func (a *adapter) HandleEthGasDenomination() ([]string, error) {
 		return nil, err
 	}
 
-	txHashes, err := a.sendBatchTxs(inputData, a.config.GasStation.Address)
-	if err != nil {
-		log.Error("gas denomination: failed to send tx", "err", err.Error())
-		return nil, err
+	var txHashes []string
+	for _, address := range a.config.GasStation.Addresses {
+		batchTxHashes, innerErr := a.sendBatchTxs(inputData, address)
+		if innerErr != nil {
+			log.Error("gas denomination: failed to send tx", "err", innerErr.Error())
+			return nil, innerErr
+		}
+		txHashes = append(txHashes, batchTxHashes...)
 	}
 
 	return txHashes, nil
