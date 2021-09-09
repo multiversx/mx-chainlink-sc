@@ -61,8 +61,8 @@ pub trait PriceAggregatorModule {
 
     fn get_price_for_pair(
         &self,
-        from_ticker: TokenIdentifier,
-        to_ticker: TokenIdentifier,
+        from_ticker: BoxedBytes,
+        to_ticker: BoxedBytes,
     ) -> Option<Self::BigUint> {
         let price_aggregator_address = self.price_aggregator_address().get();
         if price_aggregator_address.is_zero() {
