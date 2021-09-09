@@ -1,6 +1,0 @@
-[package]
-name = "proxy-modules"
-version = "0.0.0"
-
-[dependencies.price-aggregator]
-path = "price-aggregator"
