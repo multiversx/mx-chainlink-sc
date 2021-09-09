@@ -44,7 +44,7 @@ impl<BigUint: BigUintApi> From<AggregatorResultAsMultiResult<BigUint>>
 }
 
 #[elrond_wasm::module]
-pub trait PriceAggregatorModule: crate::tokens::TokensModule {
+pub trait PriceAggregatorModule {
     #[only_owner]
     #[endpoint(setPriceAggregatorAddress)]
     fn set_price_aggregator_address(&self, address: Address) -> SCResult<()> {
