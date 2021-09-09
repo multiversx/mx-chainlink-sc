@@ -1,3 +1,5 @@
+#![no_std]
+
 elrond_wasm::imports!();
 
 pub const EGLD_TICKER: &[u8] = b"EGLD";
