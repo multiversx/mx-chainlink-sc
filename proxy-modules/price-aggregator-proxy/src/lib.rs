@@ -1,5 +1,6 @@
 elrond_wasm::imports!();
 
+pub const EGLD_TICKER: &[u8] = b"EGLD";
 pub const DOLLAR_TICKER: &[u8] = b"USD";
 
 pub type AggregatorResultAsMultiResult<BigUint> =
@@ -60,16 +61,13 @@ pub trait PriceAggregatorModule {
 
     fn get_price_for_pair(
         &self,
-        from: TokenIdentifier,
-        to: TokenIdentifier,
+        from_ticker: TokenIdentifier,
+        to_ticker: TokenIdentifier,
     ) -> Option<Self::BigUint> {
         let price_aggregator_address = self.price_aggregator_address().get();
         if price_aggregator_address.is_zero() {
             return None;
         }
-
-        let from_ticker = self.get_token_ticker(&from);
-        let to_ticker = self.get_token_ticker(&to);
 
         let result: OptionalResult<AggregatorResultAsMultiResult<Self::BigUint>> = self
             .aggregator_proxy(price_aggregator_address)
