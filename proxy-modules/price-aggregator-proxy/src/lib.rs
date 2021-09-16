@@ -66,6 +66,15 @@ pub trait PriceAggregatorModule {
         from_ticker: BoxedBytes,
         to_ticker: BoxedBytes,
     ) -> Option<Self::BigUint> {
+        self.get_full_result_for_pair(from_ticker, to_ticker)
+            .map(|aggregator_result| aggregator_result.price)
+    }
+
+    fn get_full_result_for_pair(
+        &self,
+        from_ticker: BoxedBytes,
+        to_ticker: BoxedBytes,
+    ) -> Option<AggregatorResult<Self::BigUint>> {
         let price_aggregator_address = self.price_aggregator_address().get();
         if price_aggregator_address.is_zero() {
             return None;
@@ -78,7 +87,7 @@ pub trait PriceAggregatorModule {
 
         result
             .into_option()
-            .map(|multi_result| AggregatorResult::from(multi_result).price)
+            .map(|multi_result| AggregatorResult::from(multi_result))
     }
 
     #[proxy]
