@@ -74,7 +74,7 @@ pub trait PriceAggregatorModule {
         &self,
         from_ticker: BoxedBytes,
         to_ticker: BoxedBytes,
-    ) -> Option<AggregatorResult<BigUint>> {
+    ) -> Option<AggregatorResult<Self::BigUint>> {
         let price_aggregator_address = self.price_aggregator_address().get();
         if price_aggregator_address.is_zero() {
             return None;
