@@ -67,7 +67,7 @@ pub trait PriceAggregatorModule {
         to_ticker: BoxedBytes,
     ) -> Option<Self::BigUint> {
         self.get_full_result_for_pair(from_ticker, to_ticker)
-            .map(|aggregator_result| aggregator_result.price);
+            .map(|aggregator_result| aggregator_result.price)
     }
 
     fn get_full_result_for_pair(
