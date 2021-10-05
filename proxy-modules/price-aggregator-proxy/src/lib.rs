@@ -5,8 +5,8 @@ elrond_wasm::imports!();
 pub const EGLD_TICKER: &[u8] = b"EGLD";
 pub const DOLLAR_TICKER: &[u8] = b"USD";
 
-pub type AggregatorResultAsMultiResult<BigUint> =
-    MultiResult5<u32, BoxedBytes, BoxedBytes, BigUint, u8>;
+pub type AggregatorResultAsMultiResult<M> =
+    MultiResult5<u32, ManagedBuffer<M>, ManagedBuffer<M>, BigUint<M>, u8>;
 
 mod price_aggregator_proxy {
     elrond_wasm::imports!();
@@ -16,24 +16,24 @@ mod price_aggregator_proxy {
         #[view(latestPriceFeedOptional)]
         fn latest_price_feed_optional(
             &self,
-            from: BoxedBytes,
-            to: BoxedBytes,
-        ) -> OptionalResult<super::AggregatorResultAsMultiResult<Self::BigUint>>;
+            from: ManagedBuffer,
+            to: ManagedBuffer,
+        ) -> OptionalResult<super::AggregatorResultAsMultiResult<Self::Api>>;
     }
 }
 
-pub struct AggregatorResult<BigUint: BigUintApi> {
+pub struct AggregatorResult<M: ManagedTypeApi> {
     pub round_id: u32,
-    pub from_token_name: BoxedBytes,
-    pub to_token_name: BoxedBytes,
-    pub price: BigUint,
+    pub from_token_name: ManagedBuffer<M>,
+    pub to_token_name: ManagedBuffer<M>,
+    pub price: BigUint<M>,
     pub decimals: u8,
 }
 
-impl<BigUint: BigUintApi> From<AggregatorResultAsMultiResult<BigUint>>
-    for AggregatorResult<BigUint>
+impl<M: ManagedTypeApi> From<AggregatorResultAsMultiResult<M>>
+    for AggregatorResult<M>
 {
-    fn from(multi_result: AggregatorResultAsMultiResult<BigUint>) -> Self {
+    fn from(multi_result: AggregatorResultAsMultiResult<M>) -> Self {
         let (round_id, from_token_name, to_token_name, price, decimals) = multi_result.into_tuple();
 
         AggregatorResult {
@@ -50,7 +50,7 @@ impl<BigUint: BigUintApi> From<AggregatorResultAsMultiResult<BigUint>>
 pub trait PriceAggregatorModule {
     #[only_owner]
     #[endpoint(setPriceAggregatorAddress)]
-    fn set_price_aggregator_address(&self, address: Address) -> SCResult<()> {
+    fn set_price_aggregator_address(&self, address: ManagedAddress) -> SCResult<()> {
         require!(
             self.blockchain().is_smart_contract(&address),
             "Invalid price aggregator address"
@@ -63,24 +63,24 @@ pub trait PriceAggregatorModule {
 
     fn get_price_for_pair(
         &self,
-        from_ticker: BoxedBytes,
-        to_ticker: BoxedBytes,
-    ) -> Option<Self::BigUint> {
+        from_ticker: ManagedBuffer,
+        to_ticker: ManagedBuffer,
+    ) -> Option<BigUint> {
         self.get_full_result_for_pair(from_ticker, to_ticker)
             .map(|aggregator_result| aggregator_result.price)
     }
 
     fn get_full_result_for_pair(
         &self,
-        from_ticker: BoxedBytes,
-        to_ticker: BoxedBytes,
-    ) -> Option<AggregatorResult<Self::BigUint>> {
+        from_ticker: ManagedBuffer,
+        to_ticker: ManagedBuffer,
+    ) -> Option<AggregatorResult<Self::Api>> {
         let price_aggregator_address = self.price_aggregator_address().get();
         if price_aggregator_address.is_zero() {
             return None;
         }
 
-        let result: OptionalResult<AggregatorResultAsMultiResult<Self::BigUint>> = self
+        let result: OptionalResult<AggregatorResultAsMultiResult<Self::Api>> = self
             .aggregator_proxy(price_aggregator_address)
             .latest_price_feed_optional(from_ticker, to_ticker)
             .execute_on_dest_context();
@@ -91,9 +91,9 @@ pub trait PriceAggregatorModule {
     }
 
     #[proxy]
-    fn aggregator_proxy(&self, address: Address) -> price_aggregator_proxy::Proxy<Self::SendApi>;
+    fn aggregator_proxy(&self, address: ManagedAddress) -> price_aggregator_proxy::Proxy<Self::Api>;
 
     #[view(getAggregatorAddress)]
     #[storage_mapper("priceAggregatorAddress")]
-    fn price_aggregator_address(&self) -> SingleValueMapper<Self::Storage, Address>;
+    fn price_aggregator_address(&self) -> SingleValueMapper<ManagedAddress>;
 }
