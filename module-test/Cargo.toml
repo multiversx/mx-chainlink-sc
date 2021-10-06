@@ -1,8 +1,12 @@
 [package]
-name = "price-aggregator-proxy"
+name = "module-test"
 version = "0.0.0"
-authors = [ "",]
+authors = ["Dorin Marian Iancu <dorin.iancu@elrond.com>"]
 edition = "2018"
+publish = false
+
+[lib]
+path = "src/lib.rs"
 
 [features]
 wasm-output-mode = ["elrond-wasm-node"]
@@ -17,3 +21,7 @@ optional = true
 
 [dev-dependencies.elrond-wasm-debug]
 version = "0.20.1"
+
+[dependencies.price-aggregator-proxy]
+version = "0.0.0"
+path = "../proxy-modules/price-aggregator-proxy"
