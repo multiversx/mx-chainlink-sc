@@ -17,11 +17,12 @@ panic = "abort"
 
 [dependencies.oracle]
 path = ".."
-features = ["wasm-output-mode"]
-default-features = false
+
+[dependencies.elrond-wasm-node]
+version = "0.22.8"
 
 [dependencies.elrond-wasm-output]
-version = "0.17"
+version = "0.22.8"
 features = ["wasm-output-mode"]
 
 [workspace]

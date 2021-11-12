@@ -10,31 +10,32 @@ use crate::aggregator::aggregator_interface::Round;
 #[macro_use]
 extern crate alloc;
 
-pub fn format_biguint<BigUint: BigUintApi>(number: &BigUint) -> Vec<u8> {
+pub fn format_biguint<M: ManagedTypeApi>(number: &BigUint<M>) -> Vec<u8> {
     let mut nr = number.clone();
-    let radix = BigUint::from(10u32);
+    let radix: BigUint<M> = 10u32.managed_into(number.type_manager());
     let mut result = Vec::new();
 
     loop {
-        let last_digit = nr.clone() % radix.clone();
-        nr = nr / radix.clone();
+        let last_digit = &nr.clone() % &radix;
+        nr /= &radix;
 
-        let digit = *last_digit.to_bytes_be().get(0).unwrap_or(&0) as u8;
+        let last_digit_bytes = last_digit.to_bytes_be();
+        let digit = *last_digit_bytes.as_slice().get(0).unwrap_or(&0) as u8;
         result.push('0' as u8 + digit);
-        if nr == 0 {
+        if nr == 0u32 {
             break;
         }
     }
     result.into_iter().rev().collect()
 }
 
-pub fn format_fixed_precision<BigUint: BigUintApi>(number: &BigUint, decimals: usize) -> Vec<u8> {
+pub fn format_fixed_precision<M: ManagedTypeApi>(number: &BigUint<M>, decimals: usize) -> Vec<u8> {
     let formatted_number = format_biguint(number);
     let padding_length = (decimals + 1)
         .checked_sub(formatted_number.len())
         .unwrap_or_default();
     let padding: Vec<u8> = vec!['0' as u8; padding_length];
-    let padded_number = BoxedBytes::from_concat(&[&padding, &formatted_number]);
+    let padded_number = BoxedBytes::from_concat(&[padding.as_slice(), formatted_number.as_slice()]);
     let digits_before_dot = padded_number.len() - decimals;
 
     let left = padded_number.as_slice().iter().take(digits_before_dot);
@@ -43,10 +44,10 @@ pub fn format_fixed_precision<BigUint: BigUintApi>(number: &BigUint, decimals: u
     left.chain(dot).chain(right).cloned().collect()
 }
 
-#[elrond_wasm_derive::contract]
+#[elrond_wasm::derive::contract]
 pub trait EgldEsdtExchange {
     #[init]
-    fn init(&self, aggregator: Address) {
+    fn init(&self, aggregator: ManagedAddress) {
         self.aggregator().set(&aggregator);
     }
 
@@ -54,7 +55,7 @@ pub trait EgldEsdtExchange {
     #[endpoint(deposit)]
     fn deposit(
         &self,
-        #[payment] payment: Self::BigUint,
+        #[payment] payment: BigUint,
         #[payment_token] payment_token: TokenIdentifier,
     ) -> SCResult<()> {
         only_owner!(self, "Only the owner can deposit tokens");
@@ -66,10 +67,10 @@ pub trait EgldEsdtExchange {
     #[endpoint(exchange)]
     fn exchange(
         &self,
-        #[payment] payment: Self::BigUint,
+        #[payment] payment: BigUint,
         #[payment_token] source_token: TokenIdentifier,
         target_token: TokenIdentifier,
-    ) -> SCResult<AsyncCall<Self::SendApi>> {
+    ) -> SCResult<AsyncCall> {
         require!(payment > 0, "Payment must be more than 0");
         require!(
             self.balance().contains_key(&source_token),
@@ -107,8 +108,8 @@ pub trait EgldEsdtExchange {
                 "Invalid aggregator description format (expected 2 tokens)".as_bytes(),
             ))?;
         let (first, second) = description.split(delimiter_position);
-        let first_token = &TokenIdentifier::from(first);
-        let second_token = &TokenIdentifier::from(second);
+        let first_token: &TokenIdentifier = &first.as_slice().managed_into();
+        let second_token: &TokenIdentifier = &second.as_slice().managed_into();
         if first_token == source_token && second_token == target_token {
             return Result::Ok(false);
         }
@@ -124,15 +125,15 @@ pub trait EgldEsdtExchange {
 
     fn convert(
         &self,
-        amount: &Self::BigUint,
+        amount: &BigUint,
         source_token: &TokenIdentifier,
         target_token: &TokenIdentifier,
-        multiplier: &Self::BigUint,
-        divisor: &Self::BigUint,
-        precision_factor: &Self::BigUint,
+        multiplier: &BigUint,
+        divisor: &BigUint,
+        precision_factor: &BigUint,
         decimals: usize,
-    ) -> Result<(Self::BigUint, BoxedBytes), BoxedBytes> {
-        if divisor == &Self::BigUint::zero() {
+    ) -> Result<(BigUint, BoxedBytes), BoxedBytes> {
+        if divisor == &BigUint::zero() {
             return Result::Err("Convert - dividing by 0".as_bytes().into());
         }
         let converted_amount = amount * multiplier / divisor.clone();
@@ -150,14 +151,14 @@ pub trait EgldEsdtExchange {
 
     fn get_converted_sum(
         &self,
-        payment: &Self::BigUint,
+        payment: &BigUint,
         source_token: &TokenIdentifier,
         target_token: &TokenIdentifier,
-        exchange_rate: &Self::BigUint,
+        exchange_rate: &BigUint,
         decimals: usize,
         reverse_exchange: bool,
-    ) -> Result<(Self::BigUint, BoxedBytes), BoxedBytes> {
-        let precision_factor = Self::BigUint::from(10u64.pow(decimals as u32));
+    ) -> Result<(BigUint, BoxedBytes), BoxedBytes> {
+        let precision_factor = BigUint::from(10u64.pow(decimals as u32));
         if !reverse_exchange {
             self.convert(
                 payment,
@@ -183,11 +184,11 @@ pub trait EgldEsdtExchange {
 
     fn try_convert(
         &self,
-        result: AsyncCallResult<OptionalArg<Round<Self::BigUint>>>,
-        payment: &Self::BigUint,
+        result: AsyncCallResult<OptionalArg<Round<Self::Api>>>,
+        payment: &BigUint,
         source_token: &TokenIdentifier,
         target_token: &TokenIdentifier,
-    ) -> Result<(Self::BigUint, BoxedBytes), BoxedBytes> {
+    ) -> Result<(BigUint, BoxedBytes), BoxedBytes> {
         match result {
             AsyncCallResult::Ok(optional_result_round) => {
                 let option_round = match optional_result_round {
@@ -227,7 +228,7 @@ pub trait EgldEsdtExchange {
                 self.checked_decrease_balance(source_token, &payment)?;
                 Result::Err(BoxedBytes::from_concat(&[
                     b"Error when getting the price feed from the aggregator: ",
-                    error.err_msg.as_ref(),
+                    error.err_msg.as_slice(),
                 ]))
             }
         }
@@ -236,9 +237,9 @@ pub trait EgldEsdtExchange {
     #[callback]
     fn finalize_exchange(
         &self,
-        #[call_result] result: AsyncCallResult<OptionalArg<Round<Self::BigUint>>>,
-        caller: Address,
-        payment: Self::BigUint,
+        #[call_result] result: AsyncCallResult<OptionalArg<Round<Self::Api>>>,
+        caller: ManagedAddress,
+        payment: BigUint,
         source_token: TokenIdentifier,
         target_token: TokenIdentifier,
     ) {
@@ -253,6 +254,7 @@ pub trait EgldEsdtExchange {
                 self.send().direct(
                     &caller,
                     &target_token,
+                    0,
                     &converted_payment,
                     message.as_slice(),
                 );
@@ -260,16 +262,16 @@ pub trait EgldEsdtExchange {
             Result::Err(error) => {
                 let message = BoxedBytes::from_concat(&[b"refund (", error.as_slice(), b")"]);
                 self.send()
-                    .direct(&caller, &source_token, &payment, message.as_slice());
+                    .direct(&caller, &source_token, 0, &payment, message.as_slice());
             }
         }
     }
 
-    fn increase_balance(&self, token_identifier: &TokenIdentifier, amount: &Self::BigUint) {
+    fn increase_balance(&self, token_identifier: &TokenIdentifier, amount: &BigUint) {
         let mut balance = self
             .balance()
             .get(&token_identifier)
-            .unwrap_or_else(|| 0u32.into());
+            .unwrap_or_else(|| BigUint::zero());
         balance += amount;
         self.balance().insert(token_identifier.clone(), balance);
     }
@@ -277,16 +279,16 @@ pub trait EgldEsdtExchange {
     fn checked_decrease_balance(
         &self,
         token_identifier: &TokenIdentifier,
-        amount: &Self::BigUint,
+        amount: &BigUint,
     ) -> Result<(), BoxedBytes> {
         match self.balance().get(&token_identifier) {
             Some(balance) => {
                 if &balance < amount {
                     Result::Err(BoxedBytes::from_concat(&[
                         b"Insufficient balance: only ",
-                        &format_biguint(&balance),
+                        format_biguint(&balance).as_slice(),
                         b" of ",
-                        token_identifier.as_name(),
+                        token_identifier.as_name().as_slice(),
                         b" available",
                     ]))
                 } else {
@@ -296,50 +298,50 @@ pub trait EgldEsdtExchange {
             }
             None => Result::Err(BoxedBytes::from_concat(&[
                 b"No ",
-                token_identifier.as_name(),
+                token_identifier.as_name().as_slice(),
                 b" tokens are available",
             ])),
         }
     }
 
-    fn decrease_balance(&self, token_identifier: &TokenIdentifier, amount: &Self::BigUint) {
+    fn decrease_balance(&self, token_identifier: &TokenIdentifier, amount: &BigUint) {
         let mut balance = self
             .balance()
             .get(&token_identifier)
-            .unwrap_or_else(|| 0u32.into());
+            .unwrap_or_else(|| BigUint::zero());
         balance -= amount;
         self.balance().insert(token_identifier.clone(), balance);
     }
 
     fn conversion_message(
         &self,
-        payment: &Self::BigUint,
+        payment: &BigUint,
         source_token: &TokenIdentifier,
-        rate: &Self::BigUint,
+        rate: &BigUint,
         rate_precision: usize,
-        converted_token: &Self::BigUint,
+        converted_token: &BigUint,
         target_token: &TokenIdentifier,
     ) -> Result<BoxedBytes, BoxedBytes> {
         Result::Ok(BoxedBytes::from_concat(&[
             b"conversion from ",
-            &format_biguint(payment),
+            format_biguint(payment).as_slice(),
             b" of ",
-            source_token.as_name(),
+            source_token.as_name().as_slice(),
             b", using exchange rate ",
-            &format_fixed_precision(rate, rate_precision),
+            format_fixed_precision(rate, rate_precision).as_slice(),
             b", results in ",
-            &format_biguint(converted_token),
+            format_biguint(converted_token).as_slice(),
             b" of ",
-            target_token.as_name(),
+            target_token.as_name().as_slice(),
         ]))
     }
 
     #[storage_mapper("aggregator")]
-    fn aggregator(&self) -> SingleValueMapper<Self::Storage, Address>;
+    fn aggregator(&self) -> SingleValueMapper<ManagedAddress>;
 
     #[storage_mapper("balance")]
-    fn balance(&self) -> MapMapper<Self::Storage, TokenIdentifier, Self::BigUint>;
+    fn balance(&self) -> MapMapper<TokenIdentifier, BigUint>;
 
     #[proxy]
-    fn aggregator_interface_proxy(&self, to: Address) -> aggregator::Proxy<Self::SendApi>;
+    fn aggregator_interface_proxy(&self, to: ManagedAddress) -> aggregator::Proxy<Self::Api>;
 }

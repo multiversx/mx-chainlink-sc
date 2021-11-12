@@ -10,7 +10,7 @@
             "txId": "1-latestRoundData - trying to read the latest data without first depositing should result in an error --",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "latestRoundData",
                 "arguments": [],
@@ -30,7 +30,7 @@
             "txId": "2-deposit sufficient funds for 2 queries--",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "2,000",
                 "function": "deposit",
                 "arguments": [],
@@ -50,7 +50,7 @@
             "txId": "3-latestRoundData trying to get the latest data when there is no data should result in an error and not decrease the user's balance --",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "latestRoundData",
                 "arguments": [],
@@ -70,7 +70,7 @@
             "txId": "4-latestPriceFeed - trying to get an inexistent pair's price feed should result in an error--",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "latestPriceFeed",
                 "arguments": [
@@ -93,7 +93,7 @@
             "txId": "5-myBalance - the user's balance should be the same since the last calls resulted in errors (and funds were not deducted)--",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "myBalance",
                 "arguments": [],
@@ -115,7 +115,7 @@
             "txId": "6-withdraw - the user should be able to withdraw any unspent funds--",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "withdraw",
                 "arguments": [
@@ -137,7 +137,7 @@
             "txId": "7-myBalance - user should now have 1,500 left--",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "myBalance",
                 "arguments": [],
@@ -159,7 +159,7 @@
             "txId": "8-withdraw - try withdrawing all remaining funds--",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "withdraw",
                 "arguments": [
@@ -181,7 +181,7 @@
             "txId": "9-myBalance - user's balance should now be 0--",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "myBalance",
                 "arguments": [],

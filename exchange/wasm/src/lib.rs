@@ -1,4 +1,15 @@
+////////////////////////////////////////////////////
+////////////////// AUTO-GENERATED //////////////////
+////////////////////////////////////////////////////
+
 #![no_std]
 
-pub use elrond_wasm_output::*;
-pub use exchange::*;
+elrond_wasm_node::wasm_endpoints! {
+    exchange
+    (
+        init
+        callBack
+        deposit
+        exchange
+    )
+}

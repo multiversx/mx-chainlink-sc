@@ -1,4 +1,21 @@
+////////////////////////////////////////////////////
+////////////////// AUTO-GENERATED //////////////////
+////////////////////////////////////////////////////
+
 #![no_std]
 
-pub use elrond_wasm_output::*;
-pub use oracle::*;
+elrond_wasm_node::wasm_endpoints! {
+    oracle
+    (
+        init
+        addAuthorization
+        authorizedNodes
+        fulfillRequest
+        removeAuthorization
+        request
+        requestsAsVec
+        submit
+    )
+}
+
+elrond_wasm_node::wasm_empty_callback! {}

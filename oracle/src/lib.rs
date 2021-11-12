@@ -10,26 +10,26 @@ elrond_wasm::derive_imports!();
 
 mod client_proxy {
     elrond_wasm::imports!();
-    #[elrond_wasm_derive::proxy]
+    #[elrond_wasm::derive::proxy]
     pub trait Client {
         #[endpoint]
         fn reply(&self, nonce: u64, answer: BoxedBytes);
     }
 }
 
-#[elrond_wasm_derive::contract]
+#[elrond_wasm::derive::contract]
 pub trait Oracle {
     #[storage_mapper("nonces")]
-    fn nonces(&self) -> MapMapper<Self::Storage, Address, u64>;
+    fn nonces(&self) -> MapMapper<ManagedAddress, u64>;
 
     #[storage_mapper("requests")]
     fn requests(
         &self,
-    ) -> MapStorageMapper<Self::Storage, Address, MapMapper<Self::Storage, u64, OracleRequest>>;
+    ) -> MapStorageMapper<ManagedAddress, MapMapper<u64, OracleRequest<Self::Api>>>;
 
     #[view(requestsAsVec)]
-    fn requests_as_vec(&self) -> MultiResultVec<RequestView> {
-        let mut vec: Vec<RequestView> = Vec::new();
+    fn requests_as_vec(&self) -> MultiResultVec<RequestView<Self::Api>> {
+        let mut vec: Vec<RequestView<Self::Api>> = Vec::new();
         for (address, request) in self.requests().iter() {
             for (nonce, oracle_request) in request.iter() {
                 vec.push(RequestView {
@@ -44,7 +44,7 @@ pub trait Oracle {
 
     #[view(authorizedNodes)]
     #[storage_mapper("authorized_nodes")]
-    fn authorized_nodes(&self) -> SetMapper<Self::Storage, Address>;
+    fn authorized_nodes(&self) -> SetMapper<ManagedAddress>;
 
     #[init]
     fn init(&self) {}
@@ -54,7 +54,7 @@ pub trait Oracle {
     #[endpoint(request)]
     fn request(
         &self,
-        callback_address: Address,
+        callback_address: ManagedAddress,
         callback_method: BoxedBytes,
         nonce: u64,
         data: BoxedBytes,
@@ -88,10 +88,10 @@ pub trait Oracle {
     #[endpoint(fulfillRequest)]
     fn fulfill_request(
         &self,
-        address: Address,
+        address: ManagedAddress,
         nonce: u64,
         data: BoxedBytes,
-    ) -> SCResult<AsyncCall<Self::SendApi>> {
+    ) -> SCResult<AsyncCall> {
         self.only_authorized_node()?;
 
         // Get the request
@@ -120,10 +120,10 @@ pub trait Oracle {
     #[endpoint(submit)]
     fn submit(
         &self,
-        aggregator: Address,
+        aggregator: ManagedAddress,
         round_id: u64,
-        submission: Self::BigUint,
-    ) -> SCResult<AsyncCall<Self::SendApi>> {
+        submission: BigUint,
+    ) -> SCResult<AsyncCall> {
         only_owner!(self, "Only owner may call this function!");
         Ok(self
             .aggregator_proxy(aggregator)
@@ -132,14 +132,14 @@ pub trait Oracle {
     }
 
     #[endpoint(addAuthorization)]
-    fn add_authorization(&self, node: Address) -> SCResult<()> {
+    fn add_authorization(&self, node: ManagedAddress) -> SCResult<()> {
         only_owner!(self, "Caller must be owner");
         require!(self.authorized_nodes().insert(node), "Already authorized");
         Ok(())
     }
 
     #[endpoint(removeAuthorization)]
-    fn remove_authorization(&self, node: Address) -> SCResult<()> {
+    fn remove_authorization(&self, node: ManagedAddress) -> SCResult<()> {
         only_owner!(self, "Caller must be owner");
         require!(
             self.authorized_nodes().remove(&node),
@@ -158,8 +158,8 @@ pub trait Oracle {
     }
 
     #[proxy]
-    fn client_proxy(&self, to: Address) -> client_proxy::Proxy<Self::SendApi>;
+    fn client_proxy(&self, to: ManagedAddress) -> client_proxy::Proxy<Self::Api>;
 
     #[proxy]
-    fn aggregator_proxy(&self, to: Address) -> aggregator::Proxy<Self::SendApi>;
+    fn aggregator_proxy(&self, to: ManagedAddress) -> aggregator::Proxy<Self::Api>;
 }

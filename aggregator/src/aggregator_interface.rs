@@ -4,14 +4,14 @@ elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi, PartialEq, Debug, Clone)]
-pub struct Submission<BigUint: BigUintApi> {
-    pub values: Vec<BigUint>,
+pub struct Submission<M: ManagedTypeApi> {
+    pub values: Vec<BigUint<M>>,
 }
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
-pub struct Round<BigUint: BigUintApi> {
+pub struct Round<M: ManagedTypeApi> {
     pub round_id: u64,
-    pub answer: Option<Submission<BigUint>>,
+    pub answer: Option<Submission<M>>,
     pub decimals: u8,
     pub description: BoxedBytes,
     pub started_at: u64,

@@ -1,0 +1,14 @@
+[package]
+name = "oracle-meta"
+version = "0.0.0"
+edition = "2018"
+publish = false
+
+[dependencies.oracle]
+path = ".."
+
+[dependencies.elrond-wasm]
+version = "0.22.8"
+
+[dependencies.elrond-wasm-debug]
+version = "0.22.8"

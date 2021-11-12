@@ -16,7 +16,7 @@
             "txId": "send-request",
             "tx": {
                 "from": "address:client1_owner",
-                "to": "address:client1_smart_contract",
+                "to": "sc:client1_smart_contract",
                 "value": "0",
                 "function": "sendRequest",
                 "arguments": [],
@@ -34,7 +34,7 @@
             "txId": "check-client-data-empty",
             "tx": {
                 "from": "address:client1_owner",
-                "to": "address:client1_smart_contract",
+                "to": "sc:client1_smart_contract",
                 "value": "0",
                 "function": "getClientData",
                 "arguments": [],
@@ -53,7 +53,7 @@
             "txId": "check-oracle-requests",
             "tx": {
                 "from": "address:oracle1_owner",
-                "to": "address:oracle1_smart_contract",
+                "to": "sc:oracle1_smart_contract",
                 "value": "0",
                 "function": "requestsAsVec",
                 "arguments": [],
@@ -62,7 +62,7 @@
             },
             "expect": {
                 "out": [
-                    "address:client1_smart_contract|u64:0|u32:0"
+                    "sc:client1_smart_contract|u64:0|u32:0"
                 ],
                 "status": "0",
                 "gas": "*",
@@ -74,11 +74,11 @@
             "txId": "oracle-fulfill-request",
             "tx": {
                 "from": "address:authorized_oracle_node",
-                "to": "address:oracle1_smart_contract",
+                "to": "sc:oracle1_smart_contract",
                 "value": "0",
                 "function": "fulfillRequest",
                 "arguments": [
-                    "address:client1_smart_contract",
+                    "sc:client1_smart_contract",
                     "0",
                     "str:42"
                 ],
@@ -97,7 +97,7 @@
             "txId": "check-client-answer",
             "tx": {
                 "from": "address:client1_owner",
-                "to": "address:client1_smart_contract",
+                "to": "sc:client1_smart_contract",
                 "value": "0",
                 "function": "getClientData",
                 "arguments": [],
