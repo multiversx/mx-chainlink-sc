@@ -10,7 +10,7 @@
             "txId": "1-deposit sufficient funds for 10 queries--",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "10,000",
                 "function": "deposit",
                 "arguments": [],
@@ -30,7 +30,7 @@
             "txId": "2-submit - from oracle 1",
             "tx": {
                 "from": "address:oracle1",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "submit",
                 "arguments": [
@@ -54,7 +54,7 @@
             "txId": "3-submit - from oracle 2",
             "tx": {
                 "from": "address:oracle2",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "submit",
                 "arguments": [
@@ -78,7 +78,7 @@
             "txId": "4-submit - non-oracle can't submit",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "submit",
                 "arguments": [
@@ -130,7 +130,7 @@
                     "storage": {},
                     "code": "*"
                 },
-                "address:price_aggregator_smart_contract": {
+                "sc:price_aggregator_smart_contract": {
                     "nonce": "*",
                     "balance": "10,000",
                     "storage": {
@@ -183,7 +183,7 @@
             "txId": "5-submit - from oracle 3",
             "tx": {
                 "from": "address:oracle3",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "submit",
                 "arguments": [
@@ -207,7 +207,7 @@
             "txId": "6-latestRoundData - after submitting twice the latest round data should be the median between the submitted values--",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "latestRoundData",
                 "arguments": [],
@@ -229,7 +229,7 @@
             "txId": "7-myBalance - check that user's balance has decreased--",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "myBalance",
                 "arguments": [],
@@ -251,7 +251,7 @@
             "txId": "8-latestPriceFeed - check the price feed only for EGLD/USDT--",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "latestPriceFeed",
                 "arguments": [
@@ -280,7 +280,7 @@
             "txId": "9-myBalance - check that user's balance has decreased again--",
             "tx": {
                 "from": "address:user",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "myBalance",
                 "arguments": [],
@@ -330,7 +330,7 @@
                     "storage": {},
                     "code": "*"
                 },
-                "address:price_aggregator_smart_contract": {
+                "sc:price_aggregator_smart_contract": {
                     "nonce": "*",
                     "balance": "10,000",
                     "storage": {
@@ -342,11 +342,11 @@
                         "``balance.node_links|u32:1": "u32:0|u32:2",
                         "``balance.node_links|u32:2": "u32:1|u32:0",
                         "``balance.node_id|address:user": "1",
-                        "``balance.node_id|address:price_aggregator_smart_contract": "2",
+                        "``balance.node_id|sc:price_aggregator_smart_contract": "2",
                         "``balance.value|u32:1": "address:user",
-                        "``balance.value|u32:2": "address:price_aggregator_smart_contract",
+                        "``balance.value|u32:2": "sc:price_aggregator_smart_contract",
                         "``balance.mapped|address:user": "8,000",
-                        "``balance.mapped|address:price_aggregator_smart_contract": "2,000",
+                        "``balance.mapped|sc:price_aggregator_smart_contract": "2,000",
                         "``oracle_status.info": "u32:4|u32:1|u32:4|u32:4",
                         "``oracle_status.node_links|u32:1": "u32:0|u32:2",
                         "``oracle_status.node_links|u32:2": "u32:1|u32:3",
@@ -384,7 +384,7 @@
             "txId": "10-submitBatch",
             "tx": {
                 "from": "address:oracle1",
-                "to": "address:price_aggregator_smart_contract",
+                "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "submitBatch",
                 "arguments": [
@@ -439,7 +439,7 @@
                     "storage": {},
                     "code": "*"
                 },
-                "address:price_aggregator_smart_contract": {
+                "sc:price_aggregator_smart_contract": {
                     "nonce": "*",
                     "balance": "10,000",
                     "storage": {
@@ -451,11 +451,11 @@
                         "``balance.node_links|u32:1": "u32:0|u32:2",
                         "``balance.node_links|u32:2": "u32:1|u32:0",
                         "``balance.node_id|address:user": "1",
-                        "``balance.node_id|address:price_aggregator_smart_contract": "2",
+                        "``balance.node_id|sc:price_aggregator_smart_contract": "2",
                         "``balance.value|u32:1": "address:user",
-                        "``balance.value|u32:2": "address:price_aggregator_smart_contract",
+                        "``balance.value|u32:2": "sc:price_aggregator_smart_contract",
                         "``balance.mapped|address:user": "8,000",
-                        "``balance.mapped|address:price_aggregator_smart_contract": "2,000",
+                        "``balance.mapped|sc:price_aggregator_smart_contract": "2,000",
                         "``oracle_status.info": "u32:4|u32:1|u32:4|u32:4",
                         "``oracle_status.node_links|u32:1": "u32:0|u32:2",
                         "``oracle_status.node_links|u32:2": "u32:1|u32:3",

@@ -5,13 +5,13 @@ use client_data::ClientData;
 
 elrond_wasm::imports!();
 
-#[elrond_wasm_derive::contract]
+#[elrond_wasm::derive::contract]
 pub trait Client {
     #[storage_get("oracle_address")]
-    fn get_oracle_address(&self) -> Address;
+    fn get_oracle_address(&self) -> ManagedAddress;
 
     #[storage_set("oracle_address")]
-    fn set_oracle_address(&self, oracle_address: Address);
+    fn set_oracle_address(&self, oracle_address: ManagedAddress);
 
     #[view(getClientData)]
     fn get_client_data(&self) -> OptionalResult<ClientData> {
@@ -23,24 +23,24 @@ pub trait Client {
     }
 
     #[storage_mapper("client_data")]
-    fn client_data(&self) -> SingleValueMapper<Self::Storage, ClientData>;
+    fn client_data(&self) -> SingleValueMapper<ClientData>;
 
     #[storage_mapper("nonce")]
-    fn nonce(&self) -> SingleValueMapper<Self::Storage, u64>;
+    fn nonce(&self) -> SingleValueMapper<u64>;
 
     #[storage_set("client_data")]
     fn set_client_data(&self, user_data: ClientData);
 
     #[proxy]
-    fn oracle_proxy(&self, to: Address) -> oracle::Proxy<Self::SendApi>;
+    fn oracle_proxy(&self, to: ManagedAddress) -> oracle::Proxy<Self::Api>;
 
     #[init]
-    fn init(&self, oracle_address: Address) {
+    fn init(&self, oracle_address: ManagedAddress) {
         self.set_oracle_address(oracle_address);
     }
 
     #[endpoint(sendRequest)]
-    fn send_request(&self) -> SCResult<AsyncCall<Self::SendApi>> {
+    fn send_request(&self) -> SCResult<AsyncCall> {
         only_owner!(self, "Caller must be owner");
         let callback_address = self.blockchain().get_sc_address();
         let callback_method = BoxedBytes::from(&b"reply"[..]);

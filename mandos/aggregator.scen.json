@@ -10,7 +10,7 @@
             "txId": "1-setRequesterPermissions - set the permissions for the requester, for starting a new round--",
             "tx": {
                 "from": "address:aggregator_owner",
-                "to": "address:aggregator_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "setRequesterPermissions",
                 "arguments": [
@@ -34,7 +34,7 @@
             "txId": "2-requestNewRound - create round 1--",
             "tx": {
                 "from": "address:requester",
-                "to": "address:aggregator_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "requestNewRound",
                 "arguments": [],
@@ -55,12 +55,12 @@
             "step": "scCall",
             "txId": "3-oracleRoundState - check the round state of oracle 1--",
             "tx": {
-                "from": "address:oracle1_smart_contract",
-                "to": "address:aggregator_smart_contract",
+                "from": "sc:oracle1_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "oracleRoundState",
                 "arguments": [
-                    "address:oracle1_smart_contract",
+                    "sc:oracle1_smart_contract",
                     "0"
                 ],
                 "gasLimit": "100,000,000",
@@ -80,8 +80,8 @@
             "step": "scCall",
             "txId": "4-submit - from oracle 1--",
             "tx": {
-                "from": "address:oracle1_smart_contract",
-                "to": "address:aggregator_smart_contract",
+                "from": "sc:oracle1_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "submit",
                 "arguments": [
@@ -103,8 +103,8 @@
             "step": "scCall",
             "txId": "5-latestRoundData - before submitting at least twice the latest round data should be empty--",
             "tx": {
-                "from": "address:oracle1_smart_contract",
-                "to": "address:aggregator_smart_contract",
+                "from": "sc:oracle1_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "latestRoundData",
                 "arguments": [],
@@ -125,8 +125,8 @@
             "step": "scCall",
             "txId": "6-submit - from oracle 2--",
             "tx": {
-                "from": "address:oracle2_smart_contract",
-                "to": "address:aggregator_smart_contract",
+                "from": "sc:oracle2_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "submit",
                 "arguments": [
@@ -148,8 +148,8 @@
             "step": "scCall",
             "txId": "7-latestRoundData - after submitting twice the latest round data should be the median between the submitted values--",
             "tx": {
-                "from": "address:oracle1_smart_contract",
-                "to": "address:aggregator_smart_contract",
+                "from": "sc:oracle1_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "latestRoundData",
                 "arguments": [],
@@ -170,12 +170,12 @@
             "step": "scCall",
             "txId": "8-withdrawablePayment - check that oracle 1 can withdraw funds due to his submission--",
             "tx": {
-                "from": "address:oracle1_smart_contract",
-                "to": "address:aggregator_smart_contract",
+                "from": "sc:oracle1_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "withdrawablePayment",
                 "arguments": [
-                    "address:oracle1_smart_contract"
+                    "sc:oracle1_smart_contract"
                 ],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
@@ -195,11 +195,11 @@
             "txId": "9-withdrawPayment - oracle 1's admin withdraws the funds--",
             "tx": {
                 "from": "address:oracle1_owner",
-                "to": "address:aggregator_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "withdrawPayment",
                 "arguments": [
-                    "address:oracle1_smart_contract",
+                    "sc:oracle1_smart_contract",
                     "address:oracle1_owner",
                     "1,000,000"
                 ],
@@ -218,12 +218,12 @@
             "step": "scCall",
             "txId": "10-withdrawablePayment - check that the funds after withdrawal are updated correctly--",
             "tx": {
-                "from": "address:oracle1_smart_contract",
-                "to": "address:aggregator_smart_contract",
+                "from": "sc:oracle1_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "withdrawablePayment",
                 "arguments": [
-                    "address:oracle1_smart_contract"
+                    "sc:oracle1_smart_contract"
                 ],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
@@ -242,8 +242,8 @@
             "step": "scCall",
             "txId": "11-allocatedFunds - check that the allocated funds after withdrawal are updated correctly--",
             "tx": {
-                "from": "address:oracle1_smart_contract",
-                "to": "address:aggregator_smart_contract",
+                "from": "sc:oracle1_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "allocatedFunds",
                 "arguments": [],
@@ -264,8 +264,8 @@
             "step": "scCall",
             "txId": "12-availableFunds - check that the available funds after withdrawal are updated correctly--",
             "tx": {
-                "from": "address:oracle1_smart_contract",
-                "to": "address:aggregator_smart_contract",
+                "from": "sc:oracle1_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "availableFunds",
                 "arguments": [],
@@ -303,7 +303,7 @@
                     "storage": {},
                     "code": ""
                 },
-                "address:oracle1_smart_contract": {
+                "sc:oracle1_smart_contract": {
                     "nonce": "*",
                     "balance": "0",
                     "storage": {
@@ -314,7 +314,7 @@
                     },
                     "code": "*"
                 },
-                "address:oracle2_smart_contract": {
+                "sc:oracle2_smart_contract": {
                     "nonce": "*",
                     "balance": "0",
                     "storage": {},
@@ -344,19 +344,19 @@
                     "storage": {},
                     "code": ""
                 },
-                "address:client1_smart_contract": {
+                "sc:client1_smart_contract": {
                     "nonce": "*",
                     "balance": "0",
                     "storage": {
-                        "``oracle_address": "address:oracle1_smart_contract"
+                        "``oracle_address": "sc:oracle1_smart_contract"
                     },
                     "code": "*"
                 },
-                "address:client2_smart_contract": {
+                "sc:client2_smart_contract": {
                     "nonce": "*",
                     "balance": "0",
                     "storage": {
-                        "``oracle_address": "address:oracle2_smart_contract"
+                        "``oracle_address": "sc:oracle2_smart_contract"
                     },
                     "code": "*"
                 },
@@ -366,7 +366,7 @@
                     "storage": {},
                     "code": ""
                 },
-                "address:aggregator_smart_contract": {
+                "sc:aggregator_smart_contract": {
                     "nonce": "*",
                     "balance": "5,000,000",
                     "storage": {
@@ -406,15 +406,15 @@
                         "``oracles.node_links|u32:1": "u32:0|u32:2",
                         "``oracles.node_links|u32:2": "u32:1|u32:3",
                         "``oracles.node_links|u32:3": "u32:2|u32:0",
-                        "``oracles.value|u32:1": "address:oracle1_smart_contract",
-                        "``oracles.value|u32:2": "address:oracle2_smart_contract",
-                        "``oracles.value|u32:3": "address:oracle3_smart_contract",
-                        "``oracles.node_id|address:oracle1_smart_contract": "1",
-                        "``oracles.node_id|address:oracle2_smart_contract": "2",
-                        "``oracles.node_id|address:oracle3_smart_contract": "3",
-                        "``oracles.mapped|address:oracle1_smart_contract": "biguint:0|u64:1|u64:0xffffffffffffffff|u64:1|u64:0|u8:1|u32:1|biguint:60|address:oracle1_owner|u8:0",
-                        "``oracles.mapped|address:oracle2_smart_contract": "biguint:1,000,000|u64:1|u64:0xffffffffffffffff|u64:1|u64:0|u8:1|u32:1|biguint:65|address:oracle2_owner|u8:0",
-                        "``oracles.mapped|address:oracle3_smart_contract": "biguint:0|u64:1|u64:0xffffffffffffffff|u64:0|u64:0|u8:0|address:oracle3_owner|u8:0",
+                        "``oracles.value|u32:1": "sc:oracle1_smart_contract",
+                        "``oracles.value|u32:2": "sc:oracle2_smart_contract",
+                        "``oracles.value|u32:3": "sc:oracle3_smart_contract",
+                        "``oracles.node_id|sc:oracle1_smart_contract": "1",
+                        "``oracles.node_id|sc:oracle2_smart_contract": "2",
+                        "``oracles.node_id|sc:oracle3_smart_contract": "3",
+                        "``oracles.mapped|sc:oracle1_smart_contract": "biguint:0|u64:1|u64:0xffffffffffffffff|u64:1|u64:0|u8:1|u32:1|biguint:60|address:oracle1_owner|u8:0",
+                        "``oracles.mapped|sc:oracle2_smart_contract": "biguint:1,000,000|u64:1|u64:0xffffffffffffffff|u64:1|u64:0|u8:1|u32:1|biguint:65|address:oracle2_owner|u8:0",
+                        "``oracles.mapped|sc:oracle3_smart_contract": "biguint:0|u64:1|u64:0xffffffffffffffff|u64:0|u64:0|u8:0|address:oracle3_owner|u8:0",
                         "``requesters.info": "u32:1|u32:1|u32:1|u32:1",
                         "``requesters.node_links|u32:1": "u32:0|u32:0",
                         "``requesters.value|u32:1": "address:requester",
@@ -436,7 +436,7 @@
             "txId": "13-requestNewRound - create round 2--",
             "tx": {
                 "from": "address:requester",
-                "to": "address:aggregator_smart_contract",
+                "to": "sc:aggregator_smart_contract",
                 "value": "0",
                 "function": "requestNewRound",
                 "arguments": [],

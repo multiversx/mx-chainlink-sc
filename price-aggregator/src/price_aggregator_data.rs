@@ -8,11 +8,11 @@ pub struct TokenPair {
 }
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
-pub struct PriceFeed<BigUint: BigUintApi> {
+pub struct PriceFeed<M: ManagedTypeApi> {
     pub round_id: u32,
     pub from: BoxedBytes,
     pub to: BoxedBytes,
-    pub price: BigUint,
+    pub price: BigUint<M>,
     pub decimals: u8,
 }
 

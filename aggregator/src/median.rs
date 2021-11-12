@@ -3,9 +3,9 @@ elrond_wasm::derive_imports!();
 use crate::aggregator_interface::Submission;
 
 /// Calculates the median for each of the values in a Submission
-pub fn calculate_submission_median<BigUint: BigUintApi>(
-    submissions: Vec<Submission<BigUint>>,
-) -> Result<Option<Submission<BigUint>>, SCError> {
+pub fn calculate_submission_median<M: ManagedTypeApi>(
+    submissions: Vec<Submission<M>>,
+) -> Result<Option<Submission<M>>, StaticSCError> {
     if submissions.is_empty() {
         return Result::Ok(None);
     }
@@ -18,7 +18,7 @@ pub fn calculate_submission_median<BigUint: BigUintApi>(
             .skip(index)
             .step_by(values_count)
     });
-    let mut new_submission = Submission::<BigUint> { values: Vec::new() };
+    let mut new_submission = Submission { values: Vec::new() };
     for values in iter {
         let median = calculate(values.cloned().collect())?.unwrap().clone();
         new_submission.values.push(median);
@@ -28,9 +28,7 @@ pub fn calculate_submission_median<BigUint: BigUintApi>(
 
 /// Returns the sorted middle, or the average of the two middle indexed items if the
 /// vector has an even number of elements.
-pub fn calculate<BigUint: BigUintApi>(mut list: Vec<BigUint>) -> Result<Option<BigUint>, SCError>
-where
-    BigUint: BigUintApi,
+pub fn calculate<M: ManagedTypeApi>(mut list: Vec<BigUint<M>>) -> Result<Option<BigUint<M>>, StaticSCError>
 {
     if list.is_empty() {
         return Result::Ok(None);
@@ -41,7 +39,7 @@ where
     if len % 2 == 0 {
         let median1 = list.get(middle_index - 1).ok_or("median1 invalid index")?;
         let median2 = list.get(middle_index).ok_or("median2 invalid index")?;
-        Result::Ok(Some((median1.clone() + median2.clone()) / 2u64.into()))
+        Result::Ok(Some((median1.clone() + median2.clone()) / 2u64))
     } else {
         let median = list.get(middle_index).ok_or("median invalid index")?;
         Result::Ok(Some(median.clone()))

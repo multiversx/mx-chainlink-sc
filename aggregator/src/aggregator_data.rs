@@ -4,24 +4,24 @@ elrond_wasm::derive_imports!();
 pub use crate::aggregator_interface::Submission;
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
-pub struct RoundDetails<BigUint: BigUintApi> {
-    pub submissions: Vec<Submission<BigUint>>,
+pub struct RoundDetails<M: ManagedTypeApi> {
+    pub submissions: Vec<Submission<M>>,
     pub max_submissions: u64,
     pub min_submissions: u64,
     pub timeout: u64,
-    pub payment_amount: BigUint,
+    pub payment_amount: BigUint<M>,
 }
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
-pub struct OracleStatus<BigUint: BigUintApi> {
-    pub withdrawable: BigUint,
+pub struct OracleStatus<M: ManagedTypeApi> {
+    pub withdrawable: BigUint<M>,
     pub starting_round: u64,
     pub ending_round: u64,
     pub last_reported_round: u64,
     pub last_started_round: u64,
-    pub latest_submission: Option<Submission<BigUint>>,
-    pub admin: Address,
-    pub pending_admin: Option<Address>,
+    pub latest_submission: Option<Submission<M>>,
+    pub admin: ManagedAddress<M>,
+    pub pending_admin: Option<ManagedAddress<M>>,
 }
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
@@ -31,20 +31,20 @@ pub struct Requester {
     pub last_started_round: u64,
 }
 
-#[derive(TopEncode, TopDecode, PartialEq, Clone, Copy)]
-pub struct Funds<BigUint: BigUintApi> {
-    pub available: BigUint,
-    pub allocated: BigUint,
+#[derive(TopEncode, TopDecode, PartialEq, Clone)]
+pub struct Funds<M: ManagedTypeApi> {
+    pub available: BigUint<M>,
+    pub allocated: BigUint<M>,
 }
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
-pub struct OracleRoundState<BigUint: BigUintApi> {
+pub struct OracleRoundState<M: ManagedTypeApi> {
     pub eligible_to_submit: bool,
     pub round_id: u64,
-    pub latest_submission: Option<Submission<BigUint>>,
+    pub latest_submission: Option<Submission<M>>,
     pub started_at: u64,
     pub timeout: u64,
-    pub available_funds: BigUint,
+    pub available_funds: BigUint<M>,
     pub oracle_count: u64,
-    pub payment_amount: BigUint,
+    pub payment_amount: BigUint<M>,
 }

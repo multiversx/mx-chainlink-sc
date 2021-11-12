@@ -1,4 +1,17 @@
+////////////////////////////////////////////////////
+////////////////// AUTO-GENERATED //////////////////
+////////////////////////////////////////////////////
+
 #![no_std]
 
-pub use client::*;
-pub use elrond_wasm_output::*;
+elrond_wasm_node::wasm_endpoints! {
+    client
+    (
+        init
+        getClientData
+        reply
+        sendRequest
+    )
+}
+
+elrond_wasm_node::wasm_empty_callback! {}

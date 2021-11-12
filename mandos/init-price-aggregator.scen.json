@@ -39,7 +39,7 @@
                 {
                     "creatorAddress": "address:aggregator_owner",
                     "creatorNonce": "0",
-                    "newAddress": "address:price_aggregator_smart_contract"
+                    "newAddress": "sc:price_aggregator_smart_contract"
                 }
             ]
         },
