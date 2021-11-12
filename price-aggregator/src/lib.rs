@@ -84,12 +84,12 @@ pub trait PriceAggregator {
     }
 
     #[endpoint]
-    fn submit(&self, from: BoxedBytes, to: BoxedBytes, price: BigUint) -> SCResult<()> {
+    fn submit(&self, from: ManagedBuffer, to: ManagedBuffer, price: BigUint) -> SCResult<()> {
         self.require_is_oracle()?;
         self.submit_unchecked(from, to, price)
     }
 
-    fn submit_unchecked(&self, from: BoxedBytes, to: BoxedBytes, price: BigUint) -> SCResult<()> {
+    fn submit_unchecked(&self, from: ManagedBuffer, to: ManagedBuffer, price: BigUint) -> SCResult<()> {
         let token_pair = TokenPair { from, to };
         let mut submissions = self
             .submissions()
@@ -112,7 +112,7 @@ pub trait PriceAggregator {
     #[endpoint(submitBatch)]
     fn submit_batch(
         &self,
-        #[var_args] submissions: MultiArgVec<MultiArg3<BoxedBytes, BoxedBytes, BigUint>>,
+        #[var_args] submissions: MultiArgVec<MultiArg3<ManagedBuffer, ManagedBuffer, BigUint>>,
     ) -> SCResult<()> {
         self.require_is_oracle()?;
 
@@ -137,7 +137,7 @@ pub trait PriceAggregator {
 
     fn create_new_round(
         &self,
-        token_pair: TokenPair,
+        token_pair: TokenPair<Self::Api>,
         mut submissions: MapMapper<ManagedAddress, BigUint>,
     ) -> SCResult<()> {
         if submissions.len() as u32 >= self.submission_count().get() {
@@ -179,9 +179,9 @@ pub trait PriceAggregator {
     #[endpoint(latestPriceFeed)]
     fn latest_price_feed(
         &self,
-        from: BoxedBytes,
-        to: BoxedBytes,
-    ) -> SCResult<MultiArg5<u32, BoxedBytes, BoxedBytes, BigUint, u8>> {
+        from: ManagedBuffer,
+        to: ManagedBuffer,
+    ) -> SCResult<MultiArg5<u32, ManagedBuffer, ManagedBuffer, BigUint, u8>> {
         self.subtract_query_payment()?;
         let token_pair = TokenPair { from, to };
         let round_values = self
@@ -201,9 +201,9 @@ pub trait PriceAggregator {
     #[view(latestPriceFeedOptional)]
     fn latest_price_feed_optional(
         &self,
-        from: BoxedBytes,
-        to: BoxedBytes,
-    ) -> OptionalResult<MultiArg5<u32, BoxedBytes, BoxedBytes, BigUint, u8>> {
+        from: ManagedBuffer,
+        to: ManagedBuffer,
+    ) -> OptionalResult<MultiArg5<u32, ManagedBuffer, ManagedBuffer, BigUint, u8>> {
         self.latest_price_feed(from, to).ok().into()
     }
 
@@ -216,7 +216,7 @@ pub trait PriceAggregator {
 
     fn make_price_feed(
         &self,
-        token_pair: TokenPair,
+        token_pair: TokenPair<Self::Api>,
         round_values: VecMapper<BigUint>,
     ) -> PriceFeed<Self::Api> {
         let round_id = round_values.len();
@@ -262,10 +262,10 @@ pub trait PriceAggregator {
     fn oracle_status(&self) -> MapMapper<ManagedAddress, OracleStatus>;
 
     #[storage_mapper("rounds")]
-    fn rounds(&self) -> MapStorageMapper<TokenPair, VecMapper<BigUint>>;
+    fn rounds(&self) -> MapStorageMapper<TokenPair<Self::Api>, VecMapper<BigUint>>;
 
     #[storage_mapper("submissions")]
-    fn submissions(&self) -> MapStorageMapper<TokenPair, MapMapper<ManagedAddress, BigUint>>;
+    fn submissions(&self) -> MapStorageMapper<TokenPair<Self::Api>, MapMapper<ManagedAddress, BigUint>>;
 
     #[storage_mapper("balance")]
     fn balance(&self) -> MapMapper<ManagedAddress, BigUint>;
