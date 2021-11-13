@@ -5,7 +5,10 @@ elrond_wasm::imports!();
 pub mod median;
 
 mod price_aggregator_data;
+use arrayvec::ArrayVec;
 use price_aggregator_data::{OracleStatus, PriceFeed, TokenPair};
+
+const SUBMISSION_LIST_MAX_LEN: usize = 50;
 
 #[elrond_wasm::derive::contract]
 pub trait PriceAggregator {
@@ -13,7 +16,7 @@ pub trait PriceAggregator {
     fn init(
         &self,
         payment_token: TokenIdentifier,
-        oracles: Vec<ManagedAddress>,
+        oracles: ManagedVec<ManagedAddress>,
         submission_count: u32,
         decimals: u8,
         query_payment_amount: BigUint,
@@ -22,7 +25,7 @@ pub trait PriceAggregator {
         self.query_payment_amount().set(&query_payment_amount);
         self.submission_count().set(&submission_count);
         self.decimals().set(&decimals);
-        oracles.iter().for_each(|oracle| {
+        for oracle in oracles.iter() {
             self.oracle_status().insert(
                 oracle.clone(),
                 OracleStatus {
@@ -30,7 +33,7 @@ pub trait PriceAggregator {
                     accepted_submissions: 0,
                 },
             );
-        });
+        }
         Ok(())
     }
 
@@ -89,7 +92,12 @@ pub trait PriceAggregator {
         self.submit_unchecked(from, to, price)
     }
 
-    fn submit_unchecked(&self, from: ManagedBuffer, to: ManagedBuffer, price: BigUint) -> SCResult<()> {
+    fn submit_unchecked(
+        &self,
+        from: ManagedBuffer,
+        to: ManagedBuffer,
+        price: BigUint,
+    ) -> SCResult<()> {
         let token_pair = TokenPair { from, to };
         let mut submissions = self
             .submissions()
@@ -112,13 +120,12 @@ pub trait PriceAggregator {
     #[endpoint(submitBatch)]
     fn submit_batch(
         &self,
-        #[var_args] submissions: MultiArgVec<MultiArg3<ManagedBuffer, ManagedBuffer, BigUint>>,
+        #[var_args] submissions: ManagedVarArgs<MultiArg3<ManagedBuffer, ManagedBuffer, BigUint>>,
     ) -> SCResult<()> {
         self.require_is_oracle()?;
 
         for (from, to, price) in submissions
-            .iter()
-            .cloned()
+            .into_iter()
             .map(|submission| submission.into_tuple())
         {
             self.submit_unchecked(from, to, price)?;
@@ -140,9 +147,18 @@ pub trait PriceAggregator {
         token_pair: TokenPair<Self::Api>,
         mut submissions: MapMapper<ManagedAddress, BigUint>,
     ) -> SCResult<()> {
-        if submissions.len() as u32 >= self.submission_count().get() {
+        let submissions_len = submissions.len();
+        if submissions_len as u32 >= self.submission_count().get() {
+            require!(
+                submissions_len <= SUBMISSION_LIST_MAX_LEN,
+                "submission list capacity exceeded"
+            );
+            let mut submissions_vec = ArrayVec::<BigUint, SUBMISSION_LIST_MAX_LEN>::new();
+            for submission_value in submissions.values() {
+                submissions_vec.push(submission_value);
+            }
             let price_feed =
-                median::calculate(submissions.values().collect())?.ok_or("no submissions")?;
+                median::calculate(submissions_vec.as_mut_slice())?.ok_or("no submissions")?;
             self.rounds()
                 .entry(token_pair)
                 .or_default()
@@ -166,14 +182,14 @@ pub trait PriceAggregator {
     }
 
     #[view(latestRoundData)]
-    fn latest_round_data(&self) -> SCResult<MultiResultVec<PriceFeed<Self::Api>>> {
+    fn latest_round_data(&self) -> SCResult<ManagedMultiResultVec<PriceFeed<Self::Api>>> {
         self.subtract_query_payment()?;
         require!(!self.rounds().is_empty(), "no completed rounds");
-        Ok(self
-            .rounds()
-            .iter()
-            .map(|(token_pair, round_values)| self.make_price_feed(token_pair, round_values))
-            .collect())
+        let mut result = ManagedMultiResultVec::new();
+        for (token_pair, round_values) in self.rounds().iter() {
+            result.push(self.make_price_feed(token_pair, round_values));
+        }
+        Ok(result)
     }
 
     #[endpoint(latestPriceFeed)]
@@ -238,8 +254,12 @@ pub trait PriceAggregator {
     }
 
     #[view(getOracles)]
-    fn get_oracles(&self) -> MultiResultVec<ManagedAddress> {
-        self.oracle_status().keys().collect()
+    fn get_oracles(&self) -> ManagedMultiResultVec<ManagedAddress> {
+        let mut result = ManagedMultiResultVec::new();
+        for key in self.oracle_status().keys() {
+            result.push(key);
+        }
+        result
     }
 
     #[view]
@@ -265,7 +285,9 @@ pub trait PriceAggregator {
     fn rounds(&self) -> MapStorageMapper<TokenPair<Self::Api>, VecMapper<BigUint>>;
 
     #[storage_mapper("submissions")]
-    fn submissions(&self) -> MapStorageMapper<TokenPair<Self::Api>, MapMapper<ManagedAddress, BigUint>>;
+    fn submissions(
+        &self,
+    ) -> MapStorageMapper<TokenPair<Self::Api>, MapMapper<ManagedAddress, BigUint>>;
 
     #[storage_mapper("balance")]
     fn balance(&self) -> MapMapper<ManagedAddress, BigUint>;
