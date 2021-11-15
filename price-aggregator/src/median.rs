@@ -4,12 +4,12 @@ elrond_wasm::derive_imports!();
 /// Returns the sorted middle, or the average of the two middle indexed items if the
 /// vector has an even number of elements.
 pub fn calculate<M: ManagedTypeApi>(
-    mut list: Vec<BigUint<M>>,
+    list: &mut [BigUint<M>],
 ) -> Result<Option<BigUint<M>>, StaticSCError> {
     if list.is_empty() {
         return Result::Ok(None);
     }
-    list.sort();
+    list.sort_unstable();
     let len = list.len();
     let middle_index = len / 2;
     if len % 2 == 0 {

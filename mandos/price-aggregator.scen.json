@@ -175,7 +175,8 @@
                         "``submissions.storage|nested:str:EGLD|nested:str:USDT|``.mapped|address:oracle2": "110,00"
                     },
                     "code": "*"
-                }
+                },
+                "+": ""
             }
         },
         {
@@ -376,7 +377,8 @@
                         "``rounds.storage|nested:str:EGLD|nested:str:USDT|``.len": "1"
                     },
                     "code": "*"
-                }
+                },
+                "+": ""
             }
         },
         {
@@ -498,7 +500,8 @@
                         "``rounds.storage|nested:str:EGLD|nested:str:USDT|``.len": "1"
                     },
                     "code": "*"
-                }
+                },
+                "+": ""
             }
         }
     ]
