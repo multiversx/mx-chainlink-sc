@@ -9,10 +9,10 @@ publish = false
 path = "src/lib.rs"
 
 [dependencies.elrond-wasm]
-version = "0.22.10"
+version = "0.25.0"
 
 [dependencies]
 arrayvec = { version = "0.7.1", default-features = false }
 
 [dev-dependencies.elrond-wasm-debug]
-version = "0.22.10"
+version = "0.25.0"

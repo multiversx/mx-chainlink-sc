@@ -5,7 +5,6 @@ elrond_wasm::imports!();
 pub mod median;
 
 mod price_aggregator_data;
-use arrayvec::ArrayVec;
 use price_aggregator_data::{OracleStatus, PriceFeed, TokenPair};
 
 const SUBMISSION_LIST_MAX_LEN: usize = 50;
