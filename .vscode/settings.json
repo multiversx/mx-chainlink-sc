@@ -1,12 +1,12 @@
 {
     "terminal.integrated.env.linux": {
-        "PATH": "${env:HOME}/elrondsdk/vendor-rust/bin:${env:HOME}/elrondsdk/erdpy-venv/bin:${env:HOME}/elrondsdk/arwentools:${env:HOME}/elrondsdk/nodejs/latest/bin:${env:PATH}",
+        "PATH": "${env:HOME}/elrondsdk/vendor-rust/bin:${env:HOME}/elrondsdk/erdpy-venv/bin:${env:HOME}/elrondsdk/vmtools:${env:HOME}/elrondsdk/nodejs/latest/bin:${env:PATH}",
         "VIRTUAL_ENV": "${env:HOME}/elrondsdk/erdpy-venv",
         "RUSTUP_HOME": "${env:HOME}/elrondsdk/vendor-rust",
         "CARGO_HOME": "${env:HOME}/elrondsdk/vendor-rust"
     },
     "terminal.integrated.env.osx": {
-        "PATH": "${env:HOME}/elrondsdk/vendor-rust/bin:${env:HOME}/elrondsdk/erdpy-venv/bin:${env:HOME}/elrondsdk/arwentools:${env:HOME}/elrondsdk/nodejs/latest/bin:${env:PATH}",
+        "PATH": "${env:HOME}/elrondsdk/vendor-rust/bin:${env:HOME}/elrondsdk/erdpy-venv/bin:${env:HOME}/elrondsdk/vmtools:${env:HOME}/elrondsdk/nodejs/latest/bin:${env:PATH}",
         "VIRTUAL_ENV": "${env:HOME}/elrondsdk/erdpy-venv",
         "RUSTUP_HOME": "${env:HOME}/elrondsdk/vendor-rust",
         "CARGO_HOME": "${env:HOME}/elrondsdk/vendor-rust"

@@ -12,7 +12,7 @@ extern crate alloc;
 
 pub fn format_biguint<M: ManagedTypeApi>(number: &BigUint<M>) -> Vec<u8> {
     let mut nr = number.clone();
-    let radix: BigUint<M> = 10u32.managed_into(number.type_manager());
+    let radix = BigUint::from(10u32);
     let mut result = Vec::new();
 
     loop {
@@ -108,12 +108,12 @@ pub trait EgldEsdtExchange {
                 "Invalid aggregator description format (expected 2 tokens)".as_bytes(),
             ))?;
         let (first, second) = description.split(delimiter_position);
-        let first_token: &TokenIdentifier = &first.as_slice().managed_into();
-        let second_token: &TokenIdentifier = &second.as_slice().managed_into();
-        if first_token == source_token && second_token == target_token {
+        let first_token = TokenIdentifier::from(first.as_slice());
+        let second_token = TokenIdentifier::from(second.as_slice());
+        if &first_token == source_token && &second_token == target_token {
             return Result::Ok(false);
         }
-        if first_token == target_token && second_token == source_token {
+        if &first_token == target_token && &second_token == source_token {
             return Result::Ok(true);
         }
         Result::Err(
