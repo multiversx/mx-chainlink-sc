@@ -50,15 +50,13 @@ impl<M: ManagedTypeApi> From<AggregatorResultAsMultiResult<M>>
 pub trait PriceAggregatorModule {
     #[only_owner]
     #[endpoint(setPriceAggregatorAddress)]
-    fn set_price_aggregator_address(&self, address: ManagedAddress) -> SCResult<()> {
+    fn set_price_aggregator_address(&self, address: ManagedAddress) {
         require!(
             self.blockchain().is_smart_contract(&address),
             "Invalid price aggregator address"
         );
 
         self.price_aggregator_address().set(&address);
-
-        Ok(())
     }
 
     fn get_price_for_pair(
