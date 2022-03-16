@@ -1,18 +1,23 @@
 use elrond_wasm::types::BigUint;
 use elrond_wasm_debug::DebugApi;
-use exchange::{format_biguint, format_fixed_precision};
+use exchange::format_biguint;
 
 #[test]
 fn test_format_biguint() {
     let _ = DebugApi::dummy();
-    assert_eq!("0".as_bytes(), format_biguint(&BigUint::<DebugApi>::zero()));
+    assert_eq!(
+        "0".as_bytes(),
+        format_biguint(BigUint::<DebugApi>::zero()).as_slice()
+    );
     assert_eq!(
         "1000000000".to_string(),
-        String::from_utf8(format_biguint(&BigUint::<DebugApi>::from(1000000000u64))).unwrap()
+        String::from_utf8(format_biguint(BigUint::<DebugApi>::from(1000000000u64)).to_vec())
+            .unwrap()
     );
     assert_eq!(
         "1234567890".to_string(),
-        String::from_utf8(format_biguint(&BigUint::<DebugApi>::from(1234567890u64))).unwrap()
+        String::from_utf8(format_biguint(BigUint::<DebugApi>::from(1234567890u64)).to_vec())
+            .unwrap()
     );
 }
 

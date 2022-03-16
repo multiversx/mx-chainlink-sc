@@ -1,10 +1,13 @@
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
-use crate::aggregator_interface::Submission;
+use crate::{
+    aggregator_data::SubmissionsVec,
+    aggregator_interface::{SingleSubmissionValuesVec, Submission},
+};
 
 /// Calculates the median for each of the values in a Submission
 pub fn calculate_submission_median<M: ManagedTypeApi>(
-    submissions: Vec<Submission<M>>,
+    submissions: SubmissionsVec<M>,
 ) -> Result<Option<Submission<M>>, StaticSCError> {
     if submissions.is_empty() {
         return Result::Ok(None);
@@ -18,7 +21,9 @@ pub fn calculate_submission_median<M: ManagedTypeApi>(
             .skip(index)
             .step_by(values_count)
     });
-    let mut new_submission = Submission { values: Vec::new() };
+    let mut new_submission = Submission {
+        values: ArrayVec::new(),
+    };
     for values in iter {
         let median = calculate(values.cloned().collect())?.unwrap().clone();
         new_submission.values.push(median);
@@ -28,8 +33,9 @@ pub fn calculate_submission_median<M: ManagedTypeApi>(
 
 /// Returns the sorted middle, or the average of the two middle indexed items if the
 /// vector has an even number of elements.
-pub fn calculate<M: ManagedTypeApi>(mut list: Vec<BigUint<M>>) -> Result<Option<BigUint<M>>, StaticSCError>
-{
+pub fn calculate<M: ManagedTypeApi>(
+    mut list: SingleSubmissionValuesVec<M>,
+) -> Result<Option<BigUint<M>>, StaticSCError> {
     if list.is_empty() {
         return Result::Ok(None);
     }

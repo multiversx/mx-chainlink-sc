@@ -1,10 +1,10 @@
 [package]
-name = "price-aggregator-meta"
+name = "module-test-meta"
 version = "0.0.0"
 edition = "2018"
 publish = false
 
-[dependencies.price-aggregator]
+[dependencies.module-test]
 path = ".."
 
 [dependencies.elrond-wasm]

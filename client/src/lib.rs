@@ -5,61 +5,56 @@ use client_data::ClientData;
 
 elrond_wasm::imports!();
 
-#[elrond_wasm::derive::contract]
+#[elrond_wasm::contract]
 pub trait Client {
-    #[storage_get("oracle_address")]
-    fn get_oracle_address(&self) -> ManagedAddress;
-
-    #[storage_set("oracle_address")]
-    fn set_oracle_address(&self, oracle_address: ManagedAddress);
+    #[storage_mapper("oracle_address")]
+    fn oracle_address(&self) -> SingleValueMapper<ManagedAddress>;
 
     #[view(getClientData)]
-    fn get_client_data(&self) -> OptionalResult<ClientData> {
+    fn get_client_data(&self) -> OptionalValue<ClientData<Self::Api>> {
         if self.client_data().is_empty() {
-            OptionalResult::None
+            OptionalValue::None
         } else {
-            OptionalResult::Some(self.client_data().get())
+            OptionalValue::Some(self.client_data().get())
         }
     }
 
     #[storage_mapper("client_data")]
-    fn client_data(&self) -> SingleValueMapper<ClientData>;
+    fn client_data(&self) -> SingleValueMapper<ClientData<Self::Api>>;
 
     #[storage_mapper("nonce")]
     fn nonce(&self) -> SingleValueMapper<u64>;
-
-    #[storage_set("client_data")]
-    fn set_client_data(&self, user_data: ClientData);
 
     #[proxy]
     fn oracle_proxy(&self, to: ManagedAddress) -> oracle::Proxy<Self::Api>;
 
     #[init]
     fn init(&self, oracle_address: ManagedAddress) {
-        self.set_oracle_address(oracle_address);
+        self.oracle_address().set(oracle_address);
     }
 
+    #[only_owner]
     #[endpoint(sendRequest)]
-    fn send_request(&self) -> SCResult<AsyncCall> {
-        only_owner!(self, "Caller must be owner");
+    fn send_request(&self) {
         let callback_address = self.blockchain().get_sc_address();
-        let callback_method = BoxedBytes::from(&b"reply"[..]);
+        let callback_method = ManagedBuffer::from(&b"reply"[..]);
         let nonce = self.nonce().get();
         self.nonce().update(|nonce| *nonce += 1);
-        let data = BoxedBytes::empty();
-        let oracle = self.oracle_proxy(self.get_oracle_address());
-        Ok(oracle
+        let data = ManagedBuffer::new();
+        let oracle = self.oracle_proxy(self.oracle_address().get());
+
+        oracle
             .request(callback_address, callback_method, nonce, data)
-            .async_call())
+            .async_call()
+            .call_and_exit();
     }
 
     #[endpoint(reply)]
-    fn reply(&self, nonce: u64, answer: BoxedBytes) -> SCResult<()> {
+    fn reply(&self, nonce: u64, answer: ManagedBuffer) {
         require!(
-            self.blockchain().get_caller() == self.get_oracle_address(),
+            self.blockchain().get_caller() == self.oracle_address().get(),
             "Only oracle can reply"
         );
         self.client_data().set(&ClientData { nonce, answer });
-        Ok(())
     }
 }

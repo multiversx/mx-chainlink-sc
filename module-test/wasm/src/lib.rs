@@ -1,4 +1,15 @@
+////////////////////////////////////////////////////
+////////////////// AUTO-GENERATED //////////////////
+////////////////////////////////////////////////////
+
 #![no_std]
 
-pub use module_test::*;
-pub use elrond_wasm_output::*;
+elrond_wasm_node::wasm_endpoints! {
+    module_test
+    (
+        getAggregatorAddress
+        setPriceAggregatorAddress
+    )
+}
+
+elrond_wasm_node::wasm_empty_callback! {}
