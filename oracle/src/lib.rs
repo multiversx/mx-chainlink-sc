@@ -12,7 +12,7 @@ mod client_proxy {
     #[elrond_wasm::derive::proxy]
     pub trait Client {
         #[endpoint]
-        fn reply(&self, nonce: u64, answer: BoxedBytes);
+        fn reply(&self, nonce: u64, answer: ManagedBuffer);
     }
 }
 
@@ -85,7 +85,7 @@ pub trait Oracle {
     }
 
     #[endpoint(fulfillRequest)]
-    fn fulfill_request(&self, address: ManagedAddress, nonce: u64, data: BoxedBytes) {
+    fn fulfill_request(&self, address: ManagedAddress, nonce: u64, data: ManagedBuffer) {
         self.only_authorized_node();
 
         // Get the request
