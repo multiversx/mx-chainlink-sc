@@ -1,23 +1,16 @@
-use elrond_wasm::*;
 use elrond_wasm_debug::*;
 
 fn world() -> BlockchainMock {
     let mut blockchain = BlockchainMock::new();
-    blockchain.register_contract(
-        "file:client/output/client.wasm",
-        Box::new(|context| Box::new(client::contract_obj(context))),
-    );
-    blockchain.register_contract(
-        "file:oracle/output/oracle.wasm",
-        Box::new(|context| Box::new(oracle::contract_obj(context))),
-    );
-    blockchain.register_contract(
+    blockchain.register_contract_builder("file:client/output/client.wasm", client::ContractBuilder);
+    blockchain.register_contract_builder("file:oracle/output/oracle.wasm", oracle::ContractBuilder);
+    blockchain.register_contract_builder(
         "file:aggregator/output/aggregator.wasm",
-        Box::new(|context| Box::new(aggregator::contract_obj(context))),
+        aggregator::ContractBuilder,
     );
-    blockchain.register_contract(
+    blockchain.register_contract_builder(
         "file:price-aggregator/output/price-aggregator.wasm",
-        Box::new(|context| Box::new(price_aggregator::contract_obj(context))),
+        price_aggregator::ContractBuilder,
     );
     blockchain
 }

@@ -3,9 +3,12 @@ elrond_wasm::derive_imports!();
 
 pub use crate::aggregator_interface::Submission;
 
+pub const MAX_SUBMISSIONS: usize = 10;
+pub type SubmissionsVec<M> = ArrayVec<Submission<M>, MAX_SUBMISSIONS>;
+
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct RoundDetails<M: ManagedTypeApi> {
-    pub submissions: Vec<Submission<M>>,
+    pub submissions: SubmissionsVec<M>,
     pub max_submissions: u64,
     pub min_submissions: u64,
     pub timeout: u64,
@@ -47,4 +50,10 @@ pub struct OracleRoundState<M: ManagedTypeApi> {
     pub available_funds: BigUint<M>,
     pub oracle_count: u64,
     pub payment_amount: BigUint<M>,
+}
+
+#[derive(ManagedVecItem)]
+pub struct AddressAmountPair<M: ManagedTypeApi> {
+    pub address: ManagedAddress<M>,
+    pub amount: BigUint<M>,
 }

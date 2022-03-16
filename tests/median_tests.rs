@@ -1,9 +1,10 @@
-use aggregator::aggregator_interface::Submission;
+use aggregator::aggregator_interface::{Submission, MAX_SUBMISSION_VALUES};
 use aggregator::median;
+use elrond_wasm::arrayvec::ArrayVec;
 use elrond_wasm::types::BigUint;
 use elrond_wasm_debug::DebugApi;
 
-fn to_vec_biguint(v: Vec<u32>) -> Vec<BigUint<DebugApi>> {
+fn to_vec_biguint(v: Vec<u32>) -> ArrayVec<BigUint<DebugApi>, MAX_SUBMISSION_VALUES> {
     v.iter()
         .map(|value| BigUint::<DebugApi>::from(*value))
         .collect()
@@ -49,7 +50,7 @@ fn test_median_equal() {
 
 #[test]
 fn test_median_submission_empty() {
-    let actual_result = median::calculate_submission_median::<DebugApi>(vec![]).unwrap();
+    let actual_result = median::calculate_submission_median::<DebugApi>(ArrayVec::new()).unwrap();
     assert!(actual_result.is_none());
 }
 
@@ -65,7 +66,12 @@ fn test_median_submission() {
     let expected_submission_result = Submission {
         values: to_vec_biguint(vec![105, 5005, 6005, 7005, 205, 305, 405]),
     };
-    let actual_result = median::calculate_submission_median(vec![submission_a, submission_b])
+
+    let mut a_b_as_vec = ArrayVec::new();
+    a_b_as_vec.push(submission_a);
+    a_b_as_vec.push(submission_b);
+
+    let actual_result = median::calculate_submission_median(a_b_as_vec)
         .unwrap()
         .unwrap();
     assert_eq!(actual_result.values, expected_submission_result.values);

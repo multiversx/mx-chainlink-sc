@@ -1,4 +1,7 @@
-use elrond_wasm::{api::ManagedTypeApi, types::{ManagedAddress, BoxedBytes}};
+use elrond_wasm::{
+    api::ManagedTypeApi,
+    types::{ManagedAddress, ManagedBuffer},
+};
 
 elrond_wasm::derive_imports!();
 
@@ -6,13 +9,13 @@ elrond_wasm::derive_imports!();
 pub struct OracleRequest<M: ManagedTypeApi> {
     pub caller: ManagedAddress<M>,
     pub callback_address: ManagedAddress<M>,
-    pub callback_method: BoxedBytes,
-    pub data: BoxedBytes,
+    pub callback_method: ManagedBuffer<M>,
+    pub data: ManagedBuffer<M>,
 }
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct RequestView<M: ManagedTypeApi> {
     pub address: ManagedAddress<M>,
     pub nonce: u64,
-    pub data: BoxedBytes,
+    pub data: ManagedBuffer<M>,
 }
