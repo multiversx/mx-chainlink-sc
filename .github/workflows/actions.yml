@@ -1,4 +1,4 @@
-name: Builds and tests
+name: CI
 
 on:
   push:
@@ -7,16 +7,12 @@ on:
   pull_request:
 
 jobs:
-  rust_test:
-    name: Rust tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          path: 'sc-chainlink-rs'
-      - uses: actions-rs/toolchain@v1
-        with:
-          default: true
-          toolchain: nightly
-      - name: Run rust tests
-        run: cd sc-chainlink-rs && cargo test
+  contracts:
+    name: Contracts
+    uses: ElrondNetwork/elrond-actions/.github/workflows/contracts.yml@v1
+    with:
+      rust-toolchain: nightly-2022-03-01
+      vmtools-version: v1.4.43
+      extra-build-args: --ignore-eei-checks
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
