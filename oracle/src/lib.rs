@@ -107,7 +107,7 @@ pub trait Oracle {
 
         address_requests.remove(&nonce);
 
-        let client = self.client_proxy(request.callback_address);
+        let mut client = self.client_proxy(request.callback_address);
         client.reply(nonce, data).async_call().call_and_exit();
     }
 

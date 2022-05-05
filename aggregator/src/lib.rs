@@ -142,7 +142,7 @@ pub trait Aggregator {
     }
 
     #[endpoint(submit)]
-    fn submit(&self, round_id: u64, #[var_args] submission_values: MultiValueEncoded<BigUint>) {
+    fn submit(&self, round_id: u64, submission_values: MultiValueEncoded<BigUint>) {
         require!(
             submission_values.len() == self.values_count().get(),
             "incorrect number of values in submission"

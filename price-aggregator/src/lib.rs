@@ -4,7 +4,6 @@ elrond_wasm::imports!();
 pub mod median;
 
 mod price_aggregator_data;
-use core::ops::Deref;
 use price_aggregator_data::{OracleStatus, PriceFeed, TokenPair};
 
 const SUBMISSION_LIST_MAX_LEN: usize = 50;
@@ -24,9 +23,9 @@ pub trait PriceAggregator {
         self.query_payment_amount().set(&query_payment_amount);
         self.submission_count().set(&submission_count);
         self.decimals().set(&decimals);
-        for oracle in oracles.iter() {
+        for oracle in &oracles {
             self.oracle_status().insert(
-                oracle.deref().clone(),
+                oracle,
                 OracleStatus {
                     total_submissions: 0,
                     accepted_submissions: 0,
@@ -37,12 +36,8 @@ pub trait PriceAggregator {
 
     #[endpoint]
     #[payable("*")]
-    fn deposit(
-        &self,
-        #[payment] payment: BigUint,
-        #[payment_token] token: TokenIdentifier,
-        #[var_args] on_behalf_of: OptionalValue<ManagedAddress>,
-    ) {
+    fn deposit(&self, on_behalf_of: OptionalValue<ManagedAddress>) {
+        let (payment, token) = self.call_value().payment_token_pair();
         require!(token == self.payment_token().get(), "wrong token type");
         let to = on_behalf_of
             .into_option()
@@ -54,7 +49,7 @@ pub trait PriceAggregator {
         self.balance()
             .entry(to)
             .or_insert_with(|| BigUint::zero())
-            .update(|balance| *balance += amount.clone());
+            .update(|balance| *balance += amount);
     }
 
     fn subtract_balance(&self, from: ManagedAddress, amount: &BigUint) -> SCResult<()> {
@@ -63,7 +58,7 @@ pub trait PriceAggregator {
             .or_insert_with(|| BigUint::zero())
             .update(|balance| {
                 require_old!(*balance >= *amount, "insufficient balance");
-                *balance -= amount.clone();
+                *balance -= amount;
 
                 Ok(())
             })
@@ -113,9 +108,7 @@ pub trait PriceAggregator {
     #[endpoint(submitBatch)]
     fn submit_batch(
         &self,
-        #[var_args] submissions: MultiValueEncoded<
-            MultiValue3<ManagedBuffer, ManagedBuffer, BigUint>,
-        >,
+        submissions: MultiValueEncoded<MultiValue3<ManagedBuffer, ManagedBuffer, BigUint>>,
     ) {
         self.require_is_oracle();
 
