@@ -41,7 +41,7 @@ pub trait Client {
         let nonce = self.nonce().get();
         self.nonce().update(|nonce| *nonce += 1);
         let data = ManagedBuffer::new();
-        let oracle = self.oracle_proxy(self.oracle_address().get());
+        let mut oracle = self.oracle_proxy(self.oracle_address().get());
 
         oracle
             .request(callback_address, callback_method, nonce, data)

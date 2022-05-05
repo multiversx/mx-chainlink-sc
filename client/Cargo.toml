@@ -12,7 +12,7 @@ path = "src/lib.rs"
 path="../oracle"
 
 [dependencies.elrond-wasm]
-version = "0.30.0"
+version = "0.31.1"
 
 [dev-dependencies.elrond-wasm-debug]
-version = "0.30.0"
+version = "0.31.1"
