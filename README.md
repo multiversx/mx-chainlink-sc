@@ -4,6 +4,10 @@ This repository contains a collection of smart contracts for the Elrond network 
 
 ## Overview - smart contracts
 
+### Price aggregator
+
+See the [price aggregator readme](price-aggregator/README.md).
+
 ### Oracle
 
 The Oracle is a smart contract that interacts with a chainlink node via [an external initiator](https://docs.chain.link/docs/external-initiators-introduction) and [an external adapter](https://docs.chain.link/docs/external-adapters).
