@@ -11,24 +11,38 @@ const SUBMISSION_LIST_MAX_LEN: usize = 50;
 #[elrond_wasm::contract]
 pub trait PriceAggregator {
     #[init]
-    fn init(&self, oracles: ManagedVec<ManagedAddress>, submission_count: u32, decimals: u8) {
-        self.submission_count().set(&submission_count);
-        self.decimals().set(&decimals);
-        for oracle in &oracles {
-            self.oracle_status().insert(
-                oracle,
-                OracleStatus {
-                    total_submissions: 0,
-                    accepted_submissions: 0,
-                },
-            );
+    fn init(
+        &self,
+        submission_count: u32,
+        decimals: u8,
+        oracles: MultiValueEncoded<ManagedAddress>,
+    ) {
+        let is_deploy_call = !self.was_contract_deployed().get();
+        if is_deploy_call {
+            self.decimals().set(decimals);
+            self.was_contract_deployed().set(true);
+        }
+
+        self.submission_count().set(submission_count);
+
+        let mut oracle_mapper = self.oracle_status();
+        for oracle in oracles {
+            if !oracle_mapper.contains_key(&oracle) {
+                oracle_mapper.insert(
+                    oracle,
+                    OracleStatus {
+                        total_submissions: 0,
+                        accepted_submissions: 0,
+                    },
+                );
+            }
         }
     }
 
     #[endpoint]
     fn submit(&self, from: ManagedBuffer, to: ManagedBuffer, price: BigUint) {
         self.require_is_oracle();
-        self.submit_unchecked(from, to, price)
+        self.submit_unchecked(from, to, price);
     }
 
     fn submit_unchecked(&self, from: ManagedBuffer, to: ManagedBuffer, price: BigUint) {
@@ -166,6 +180,9 @@ pub trait PriceAggregator {
         }
         result
     }
+
+    #[storage_mapper("was_contract_deployed")]
+    fn was_contract_deployed(&self) -> SingleValueMapper<bool>;
 
     #[view]
     #[storage_mapper("submission_count")]
