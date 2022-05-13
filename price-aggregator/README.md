@@ -8,11 +8,9 @@ Compared to the other chainlink contracts, it is a simplified and easier to use 
 ## Deployment
 
 Arguments:
-- `payment_token:` - the fee token identifier
 - `oracles` - the list of addresses which are allowed to submit price feed updates
 - `submission_count` - the minimum number of submissions from different oracles which trigger an update of the price feed
 - `decimals` - the number of decimals of the price feed
-- `query_payment_amount` - the fee amount subtracted on each price feed request
 
 ## Submitting price feed updates
 
@@ -24,15 +22,6 @@ An oracle can submit a price feed update using one of the endpoints:
 
 Price feeds from multiple oracles are collected. When a certain threshold number of submissions has been reached (given by `submission_count`), a new round is created.
 The price feed recorded in the round is the median value out of all submissions made.
-
-## Prepaid fees
-
-The endpoints which provide feed data, `latestRoundData` and `latestPriceFeed`, subtract a fee from the caller's balance.
-A user can add to his balance through the `deposit` endpoint. Any unused funds can be withdrawn through the `withdraw` endpoint.
-
-The fee is deducted once per endpoint call, regardless of how many price feeds are requested or returned.
-The fee amount can be checked through the `query_payment_amount` view endpoint.
-The `deposit` endpoint has an optional argument `on_behalf_of`, which allows increasing another account's balance.
 
 ## Querying the price feeds
 
