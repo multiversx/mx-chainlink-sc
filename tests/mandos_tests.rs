@@ -39,8 +39,3 @@ fn init_price_aggregator() {
 fn price_aggregator() {
     elrond_wasm_debug::mandos_rs("mandos/price-aggregator.scen.json", world());
 }
-
-#[test]
-fn price_aggregator_balance() {
-    elrond_wasm_debug::mandos_rs("mandos/price-aggregator-balance.scen.json", world());
-}

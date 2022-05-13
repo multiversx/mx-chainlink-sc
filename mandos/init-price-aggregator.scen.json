@@ -51,11 +51,9 @@
                 "contractCode": "file:../price-aggregator/output/price-aggregator.wasm",
                 "value": "0",
                 "arguments": [
-                    "str:EGLD",
                     "address:oracle1|address:oracle2|address:oracle3|address:oracle4",
                     "3",
-                    "2",
-                    "1,000"
+                    "2"
                 ],
                 "gasLimit": "1,000,000,000",
                 "gasPrice": "0"
