@@ -114,6 +114,7 @@
                     "nonce": "*",
                     "balance": "0",
                     "storage": {
+                        "str:was_contract_deployed": "1",
                         "str:decimals": "2",
                         "str:submission_count": "3",
                         "str:oracle_status.info": "u32:4|u32:1|u32:4|u32:4",
@@ -264,6 +265,7 @@
                     "nonce": "*",
                     "balance": "0",
                     "storage": {
+                        "str:was_contract_deployed": "1",
                         "str:decimals": "2",
                         "str:submission_count": "3",
                         "str:oracle_status.info": "u32:4|u32:1|u32:4|u32:4",
@@ -363,6 +365,7 @@
                     "nonce": "*",
                     "balance": "0",
                     "storage": {
+                        "str:was_contract_deployed": "1",
                         "str:decimals": "2",
                         "str:submission_count": "3",
                         "str:oracle_status.info": "u32:4|u32:1|u32:4|u32:4",
