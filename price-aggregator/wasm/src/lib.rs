@@ -7,11 +7,13 @@
 elrond_wasm_node::wasm_endpoints! {
     price_aggregator
     (
+        addOracles
         decimals
         getOracles
         latestPriceFeed
         latestPriceFeedOptional
         latestRoundData
+        removeOracles
         setSubmissionCount
         submission_count
         submit

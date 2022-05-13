@@ -24,11 +24,16 @@ pub trait PriceAggregator {
         }
 
         self.submission_count().set(submission_count);
+        self.add_oracles(oracles);
+    }
 
+    #[only_owner]
+    #[endpoint(addOracles)]
+    fn add_oracles(&self, oracles: MultiValueEncoded<ManagedAddress>) {
         let mut oracle_mapper = self.oracle_status();
         for oracle in oracles {
             if !oracle_mapper.contains_key(&oracle) {
-                oracle_mapper.insert(
+                let _ = oracle_mapper.insert(
                     oracle,
                     OracleStatus {
                         total_submissions: 0,
@@ -36,6 +41,15 @@ pub trait PriceAggregator {
                     },
                 );
             }
+        }
+    }
+
+    #[only_owner]
+    #[endpoint(removeOracles)]
+    fn remove_oracles(&self, oracles: MultiValueEncoded<ManagedAddress>) {
+        let mut oracle_mapper = self.oracle_status();
+        for oracle in oracles {
+            let _ = oracle_mapper.remove(&oracle);
         }
     }
 
