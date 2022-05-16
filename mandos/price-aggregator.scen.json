@@ -413,6 +413,97 @@
                 },
                 "+": ""
             }
+        },
+        {
+            "step": "scCall",
+            "txId": "remove-oracle",
+            "tx": {
+                "from": "address:aggregator_owner",
+                "to": "sc:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "removeOracles",
+                "arguments": [
+                    "address:oracle1",
+                    "address:oracle3"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "message": "",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "checkState",
+            "accounts": {
+                "sc:price_aggregator_smart_contract": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {
+                        "str:oracle_status.node_id|address:oracle1": "0",
+                        "str:oracle_status.node_id|address:oracle2": "2",
+                        "str:oracle_status.node_id|address:oracle3": "0",
+                        "str:oracle_status.node_id|address:oracle4": "4",
+                        "str:oracle_status.value|u32:1": "",
+                        "str:oracle_status.value|u32:2": "address:oracle2",
+                        "str:oracle_status.value|u32:3": "",
+                        "str:oracle_status.value|u32:4": "address:oracle4",
+                        "+": ""
+                    },
+                    "code": "*"
+                },
+                "+": ""
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "add-oracles",
+            "tx": {
+                "from": "address:aggregator_owner",
+                "to": "sc:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "addOracles",
+                "arguments": [
+                    "address:oracle1",
+                    "address:oracle2",
+                    "address:oracle3"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "message": "",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "checkState",
+            "accounts": {
+                "sc:price_aggregator_smart_contract": {
+                    "nonce": "*",
+                    "balance": "0",
+                    "storage": {
+                        "str:oracle_status.node_id|address:oracle2": "2",
+                        "str:oracle_status.node_id|address:oracle4": "4",
+                        "str:oracle_status.node_id|address:oracle1": "5",
+                        "str:oracle_status.node_id|address:oracle3": "6",
+                        "str:oracle_status.value|u32:2": "address:oracle2",
+                        "str:oracle_status.value|u32:4": "address:oracle4",
+                        "str:oracle_status.value|u32:5": "address:oracle1",
+                        "str:oracle_status.value|u32:6": "address:oracle3",
+                        "+": ""
+                    },
+                    "code": "*"
+                },
+                "+": ""
+            }
         }
     ]
 }
