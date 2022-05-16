@@ -13,7 +13,7 @@ pub trait PriceAggregator {
     #[init]
     fn init(
         &self,
-        submission_count: u32,
+        submission_count: usize,
         decimals: u8,
         oracles: MultiValueEncoded<ManagedAddress>,
     ) {
@@ -23,8 +23,10 @@ pub trait PriceAggregator {
             self.was_contract_deployed().set(true);
         }
 
-        self.submission_count().set(submission_count);
         self.add_oracles(oracles);
+
+        self.require_valid_submission_count(submission_count);
+        self.submission_count().set(submission_count);
     }
 
     #[only_owner]
@@ -44,13 +46,18 @@ pub trait PriceAggregator {
         }
     }
 
+    /// Also receives submission count,
+    /// so the owner does not have to update it manually with setSubmissionCount before this call
     #[only_owner]
     #[endpoint(removeOracles)]
-    fn remove_oracles(&self, oracles: MultiValueEncoded<ManagedAddress>) {
+    fn remove_oracles(&self, submission_count: usize, oracles: MultiValueEncoded<ManagedAddress>) {
         let mut oracle_mapper = self.oracle_status();
         for oracle in oracles {
             let _ = oracle_mapper.remove(&oracle);
         }
+
+        self.require_valid_submission_count(submission_count);
+        self.submission_count().set(submission_count);
     }
 
     #[endpoint]
@@ -101,13 +108,22 @@ pub trait PriceAggregator {
         );
     }
 
+    fn require_valid_submission_count(&self, submission_count: usize) {
+        require!(
+            submission_count >= 1
+                && submission_count <= self.oracle_status().len()
+                && submission_count <= SUBMISSION_LIST_MAX_LEN,
+            "Invalid submission count"
+        )
+    }
+
     fn create_new_round(
         &self,
         token_pair: TokenPair<Self::Api>,
         mut submissions: MapMapper<ManagedAddress, BigUint>,
     ) {
         let submissions_len = submissions.len();
-        if submissions_len as u32 >= self.submission_count().get() {
+        if submissions_len >= self.submission_count().get() {
             require!(
                 submissions_len <= SUBMISSION_LIST_MAX_LEN,
                 "submission list capacity exceeded"
@@ -167,8 +183,9 @@ pub trait PriceAggregator {
 
     #[only_owner]
     #[endpoint(setSubmissionCount)]
-    fn set_submission_count(&self, submission_count: u32) {
-        self.submission_count().set(&submission_count);
+    fn set_submission_count(&self, submission_count: usize) {
+        self.require_valid_submission_count(submission_count);
+        self.submission_count().set(submission_count);
     }
 
     fn make_price_feed(
@@ -200,7 +217,7 @@ pub trait PriceAggregator {
 
     #[view]
     #[storage_mapper("submission_count")]
-    fn submission_count(&self) -> SingleValueMapper<u32>;
+    fn submission_count(&self) -> SingleValueMapper<usize>;
 
     #[view]
     #[storage_mapper("decimals")]

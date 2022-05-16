@@ -416,13 +416,38 @@
         },
         {
             "step": "scCall",
-            "txId": "remove-oracle",
+            "txId": "remove-oracle-invalid-submission-count",
             "tx": {
                 "from": "address:aggregator_owner",
                 "to": "sc:price_aggregator_smart_contract",
                 "value": "0",
                 "function": "removeOracles",
                 "arguments": [
+                    "3",
+                    "address:oracle1",
+                    "address:oracle3"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "4",
+                "message": "str:Invalid submission count",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "remove-oracle-ok",
+            "tx": {
+                "from": "address:aggregator_owner",
+                "to": "sc:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "removeOracles",
+                "arguments": [
+                    "2",
                     "address:oracle1",
                     "address:oracle3"
                 ],
