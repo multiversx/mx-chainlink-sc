@@ -10,14 +10,17 @@ elrond_wasm_node::wasm_endpoints! {
         addOracles
         decimals
         getOracles
+        isPaused
         latestPriceFeed
         latestPriceFeedOptional
         latestRoundData
+        pause
         removeOracles
         setSubmissionCount
         submission_count
         submit
         submitBatch
+        unpause
     )
 }
 

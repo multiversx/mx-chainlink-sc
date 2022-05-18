@@ -70,6 +70,30 @@
         },
         {
             "step": "scCall",
+            "txId": "try-submit-while-paused",
+            "tx": {
+                "from": "address:oracle1",
+                "to": "sc:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "submit",
+                "arguments": [
+                    "str:EGLD",
+                    "str:USDT",
+                    "100,00"
+                ],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "4",
+                "message": "str:Contract is paused",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
             "txId": "unpause",
             "tx": {
                 "from": "address:aggregator_owner",
@@ -77,6 +101,53 @@
                 "value": "0",
                 "function": "unpause",
                 "arguments": [],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "message": "",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "externalSteps",
+            "path": "price-aggregator.scen.json"
+        },
+        {
+            "step": "scCall",
+            "txId": "pause",
+            "tx": {
+                "from": "address:aggregator_owner",
+                "to": "sc:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "pause",
+                "arguments": [],
+                "gasLimit": "100,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "status": "0",
+                "message": "",
+                "out": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "scCall",
+            "txId": "get-price-feed-empty-while-paused",
+            "tx": {
+                "from": "address:user",
+                "to": "sc:price_aggregator_smart_contract",
+                "value": "0",
+                "function": "latestPriceFeedOptional",
+                "arguments": [
+                    "str:EGLD",
+                    "str:USDT"
+                ],
                 "gasLimit": "100,000,000",
                 "gasPrice": "0"
             },

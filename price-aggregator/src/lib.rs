@@ -7,9 +7,10 @@ mod price_aggregator_data;
 use price_aggregator_data::{OracleStatus, PriceFeed, TokenPair};
 
 const SUBMISSION_LIST_MAX_LEN: usize = 50;
+static PAUSED_ERROR_MSG: &[u8] = b"Contract is paused";
 
 #[elrond_wasm::contract]
-pub trait PriceAggregator {
+pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
     #[init]
     fn init(
         &self,
@@ -27,6 +28,8 @@ pub trait PriceAggregator {
 
         self.require_valid_submission_count(submission_count);
         self.submission_count().set(submission_count);
+
+        self.set_paused(true);
     }
 
     #[only_owner]
@@ -62,6 +65,7 @@ pub trait PriceAggregator {
 
     #[endpoint]
     fn submit(&self, from: ManagedBuffer, to: ManagedBuffer, price: BigUint) {
+        self.require_not_paused();
         self.require_is_oracle();
         self.submit_unchecked(from, to, price);
     }
@@ -90,6 +94,7 @@ pub trait PriceAggregator {
         &self,
         submissions: MultiValueEncoded<MultiValue3<ManagedBuffer, ManagedBuffer, BigUint>>,
     ) {
+        self.require_not_paused();
         self.require_is_oracle();
 
         for (from, to, price) in submissions
@@ -147,6 +152,7 @@ pub trait PriceAggregator {
 
     #[view(latestRoundData)]
     fn latest_round_data(&self) -> MultiValueEncoded<PriceFeed<Self::Api>> {
+        self.require_not_paused();
         require!(!self.rounds().is_empty(), "no completed rounds");
 
         let mut result = MultiValueEncoded::new();
@@ -163,6 +169,8 @@ pub trait PriceAggregator {
         from: ManagedBuffer,
         to: ManagedBuffer,
     ) -> SCResult<MultiValue5<u32, ManagedBuffer, ManagedBuffer, BigUint, u8>> {
+        require_old!(self.not_paused(), PAUSED_ERROR_MSG);
+
         let token_pair = TokenPair { from, to };
         let round_values = self
             .rounds()
@@ -210,6 +218,10 @@ pub trait PriceAggregator {
             result.push(key);
         }
         result
+    }
+
+    fn require_not_paused(&self) {
+        require!(self.not_paused(), PAUSED_ERROR_MSG);
     }
 
     #[storage_mapper("was_contract_deployed")]
