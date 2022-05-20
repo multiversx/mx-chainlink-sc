@@ -2,12 +2,10 @@ name: CI
 
 on:
   push:
-    branches:
-      - master
   pull_request:
 
 permissions:
-  contents: write
+  actions: write
   pull-requests: write
 
 jobs:
