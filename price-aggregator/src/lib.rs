@@ -157,10 +157,16 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
         self.require_not_paused();
         self.require_is_oracle();
 
+        let current_timestamp = self.blockchain().get_block_timestamp();
         for (from, to, submission_timestamp, price) in submissions
             .into_iter()
             .map(|submission| submission.into_tuple())
         {
+            require!(
+                submission_timestamp <= current_timestamp,
+                "Timestamp is from the future"
+            );
+
             self.submit_unchecked(from, to, submission_timestamp, price);
         }
     }
