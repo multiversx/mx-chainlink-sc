@@ -4,9 +4,11 @@ elrond_wasm::imports!();
 pub mod median;
 
 mod price_aggregator_data;
-use price_aggregator_data::{OracleStatus, PriceFeed, TokenPair};
+use price_aggregator_data::{OracleStatus, PriceFeed, TimestampedPrice, TokenPair};
 
 const SUBMISSION_LIST_MAX_LEN: usize = 50;
+const FIRST_SUBMISSION_TIMESTAMP_MAX_DIFF_SECONDS: u64 = 6;
+const MAX_ROUND_DURATION_SECONDS: u64 = 1_800; // 30 minutes
 static PAUSED_ERROR_MSG: &[u8] = b"Contract is paused";
 
 #[elrond_wasm::contract]
@@ -64,44 +66,102 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
     }
 
     #[endpoint]
-    fn submit(&self, from: ManagedBuffer, to: ManagedBuffer, price: BigUint) {
+    fn submit(
+        &self,
+        from: ManagedBuffer,
+        to: ManagedBuffer,
+        submission_timestamp: u64,
+        price: BigUint,
+    ) {
         self.require_not_paused();
         self.require_is_oracle();
-        self.submit_unchecked(from, to, price);
+
+        let current_timestamp = self.blockchain().get_block_timestamp();
+        require!(
+            submission_timestamp <= current_timestamp,
+            "Timestamp is from the future"
+        );
+
+        self.submit_unchecked(from, to, submission_timestamp, price);
     }
 
-    fn submit_unchecked(&self, from: ManagedBuffer, to: ManagedBuffer, price: BigUint) {
+    fn submit_unchecked(
+        &self,
+        from: ManagedBuffer,
+        to: ManagedBuffer,
+        submission_timestamp: u64,
+        price: BigUint,
+    ) {
         let token_pair = TokenPair { from, to };
         let mut submissions = self
             .submissions()
             .entry(token_pair.clone())
             .or_default()
             .get();
-        let accepted = submissions
-            .insert(self.blockchain().get_caller(), price)
-            .is_none();
+
+        let first_sub_time_mapper = self.first_submission_timestamp(&token_pair);
+        let last_sub_time_mapper = self.last_submission_timestamp(&token_pair);
+
+        let current_timestamp = self.blockchain().get_block_timestamp();
+        let mut first_submission_timestamp = if submissions.is_empty() {
+            self.require_valid_first_submission(submission_timestamp, current_timestamp);
+
+            first_sub_time_mapper.set(current_timestamp);
+
+            current_timestamp
+        } else {
+            first_sub_time_mapper.get()
+        };
+
+        // round was not completed in time, so it's discarded
+        if current_timestamp > first_submission_timestamp + MAX_ROUND_DURATION_SECONDS {
+            self.require_valid_first_submission(submission_timestamp, current_timestamp);
+
+            submissions.clear();
+            first_sub_time_mapper.set(current_timestamp);
+            last_sub_time_mapper.set(current_timestamp);
+
+            first_submission_timestamp = current_timestamp;
+        }
+
+        let caller = self.blockchain().get_caller();
+        let accepted = !submissions.contains_key(&caller)
+            && submission_timestamp >= first_submission_timestamp;
+        if accepted {
+            submissions.insert(caller, price);
+            last_sub_time_mapper.set(current_timestamp);
+
+            self.create_new_round(token_pair, submissions);
+        }
+
         self.oracle_status()
             .entry(self.blockchain().get_caller())
             .and_modify(|oracle_status| {
                 oracle_status.accepted_submissions += accepted as u64;
                 oracle_status.total_submissions += 1;
             });
-        self.create_new_round(token_pair, submissions);
+    }
+
+    fn require_valid_first_submission(&self, submission_timestamp: u64, current_timestamp: u64) {
+        require!(
+            current_timestamp - submission_timestamp <= FIRST_SUBMISSION_TIMESTAMP_MAX_DIFF_SECONDS,
+            "First submission too old"
+        );
     }
 
     #[endpoint(submitBatch)]
     fn submit_batch(
         &self,
-        submissions: MultiValueEncoded<MultiValue3<ManagedBuffer, ManagedBuffer, BigUint>>,
+        submissions: MultiValueEncoded<MultiValue4<ManagedBuffer, ManagedBuffer, u64, BigUint>>,
     ) {
         self.require_not_paused();
         self.require_is_oracle();
 
-        for (from, to, price) in submissions
+        for (from, to, submission_timestamp, price) in submissions
             .into_iter()
             .map(|submission| submission.into_tuple())
         {
-            self.submit_unchecked(from, to, price);
+            self.submit_unchecked(from, to, submission_timestamp, price);
         }
     }
 
@@ -133,20 +193,29 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
                 submissions_len <= SUBMISSION_LIST_MAX_LEN,
                 "submission list capacity exceeded"
             );
+
             let mut submissions_vec = ArrayVec::<BigUint, SUBMISSION_LIST_MAX_LEN>::new();
             for submission_value in submissions.values() {
                 submissions_vec.push(submission_value);
             }
-            let price_feed_result = median::calculate(submissions_vec.as_mut_slice());
-            let price_feed_opt = price_feed_result.unwrap_or_else(|err| sc_panic!(err.as_bytes()));
-            let price_feed = price_feed_opt.unwrap_or_else(|| sc_panic!("no submissions"));
+
+            let price_result = median::calculate(submissions_vec.as_mut_slice());
+            let price_opt = price_result.unwrap_or_else(|err| sc_panic!(err.as_bytes()));
+            let price = price_opt.unwrap_or_else(|| sc_panic!("no submissions"));
+            let price_feed = TimestampedPrice {
+                price,
+                timestamp: self.blockchain().get_block_timestamp(),
+            };
+
+            submissions.clear();
+            self.first_submission_timestamp(&token_pair).clear();
+            self.last_submission_timestamp(&token_pair).clear();
 
             self.rounds()
                 .entry(token_pair)
                 .or_default()
                 .get()
                 .push(&price_feed);
-            submissions.clear();
         }
     }
 
@@ -168,7 +237,7 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
         &self,
         from: ManagedBuffer,
         to: ManagedBuffer,
-    ) -> SCResult<MultiValue5<u32, ManagedBuffer, ManagedBuffer, BigUint, u8>> {
+    ) -> SCResult<MultiValue6<u32, ManagedBuffer, ManagedBuffer, u64, BigUint, u8>> {
         require_old!(self.not_paused(), PAUSED_ERROR_MSG);
 
         let token_pair = TokenPair { from, to };
@@ -177,7 +246,15 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
             .get(&token_pair)
             .ok_or("token pair not found")?;
         let feed = self.make_price_feed(token_pair, round_values);
-        Ok((feed.round_id, feed.from, feed.to, feed.price, feed.decimals).into())
+        Ok((
+            feed.round_id,
+            feed.from,
+            feed.to,
+            feed.timestamp,
+            feed.price,
+            feed.decimals,
+        )
+            .into())
     }
 
     #[view(latestPriceFeedOptional)]
@@ -185,7 +262,7 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
         &self,
         from: ManagedBuffer,
         to: ManagedBuffer,
-    ) -> OptionalValue<MultiValue5<u32, ManagedBuffer, ManagedBuffer, BigUint, u8>> {
+    ) -> OptionalValue<MultiValue6<u32, ManagedBuffer, ManagedBuffer, u64, BigUint, u8>> {
         self.latest_price_feed(from, to).ok().into()
     }
 
@@ -199,14 +276,17 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
     fn make_price_feed(
         &self,
         token_pair: TokenPair<Self::Api>,
-        round_values: VecMapper<BigUint>,
+        round_values: VecMapper<TimestampedPrice<Self::Api>>,
     ) -> PriceFeed<Self::Api> {
         let round_id = round_values.len();
+        let last_price = round_values.get(round_id);
+
         PriceFeed {
             round_id: round_id as u32,
             from: token_pair.from,
             to: token_pair.to,
-            price: round_values.get(round_id),
+            timestamp: last_price.timestamp,
+            price: last_price.price,
             decimals: self.decimals().get(),
         }
     }
@@ -239,7 +319,21 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
     fn oracle_status(&self) -> MapMapper<ManagedAddress, OracleStatus>;
 
     #[storage_mapper("rounds")]
-    fn rounds(&self) -> MapStorageMapper<TokenPair<Self::Api>, VecMapper<BigUint>>;
+    fn rounds(
+        &self,
+    ) -> MapStorageMapper<TokenPair<Self::Api>, VecMapper<TimestampedPrice<Self::Api>>>;
+
+    #[storage_mapper("first_submission_timestamp")]
+    fn first_submission_timestamp(
+        &self,
+        token_pair: &TokenPair<Self::Api>,
+    ) -> SingleValueMapper<u64>;
+
+    #[storage_mapper("last_submission_timestamp")]
+    fn last_submission_timestamp(
+        &self,
+        token_pair: &TokenPair<Self::Api>,
+    ) -> SingleValueMapper<u64>;
 
     #[storage_mapper("submissions")]
     fn submissions(
