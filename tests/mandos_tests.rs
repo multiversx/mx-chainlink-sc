@@ -29,13 +29,3 @@ fn client_request() {
 fn aggregator() {
     elrond_wasm_debug::mandos_rs("mandos/aggregator.scen.json", world());
 }
-
-#[test]
-fn init_price_aggregator() {
-    elrond_wasm_debug::mandos_rs("mandos/init-price-aggregator.scen.json", world());
-}
-
-#[test]
-fn price_aggregator() {
-    elrond_wasm_debug::mandos_rs("mandos/price-aggregator.scen.json", world());
-}
