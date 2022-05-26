@@ -3,12 +3,12 @@
 elrond_wasm::imports!();
 pub mod median;
 
-mod price_aggregator_data;
+pub mod price_aggregator_data;
 use price_aggregator_data::{OracleStatus, PriceFeed, TimestampedPrice, TokenPair};
 
 const SUBMISSION_LIST_MAX_LEN: usize = 50;
 const FIRST_SUBMISSION_TIMESTAMP_MAX_DIFF_SECONDS: u64 = 6;
-const MAX_ROUND_DURATION_SECONDS: u64 = 1_800; // 30 minutes
+pub const MAX_ROUND_DURATION_SECONDS: u64 = 1_800; // 30 minutes
 static PAUSED_ERROR_MSG: &[u8] = b"Contract is paused";
 
 #[elrond_wasm::contract]
@@ -103,10 +103,12 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
         let last_sub_time_mapper = self.last_submission_timestamp(&token_pair);
 
         let current_timestamp = self.blockchain().get_block_timestamp();
+        let mut is_first_submission = false;
         let mut first_submission_timestamp = if submissions.is_empty() {
             self.require_valid_first_submission(submission_timestamp, current_timestamp);
 
             first_sub_time_mapper.set(current_timestamp);
+            is_first_submission = true;
 
             current_timestamp
         } else {
@@ -122,11 +124,12 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
             last_sub_time_mapper.set(current_timestamp);
 
             first_submission_timestamp = current_timestamp;
+            is_first_submission = true;
         }
 
         let caller = self.blockchain().get_caller();
         let accepted = !submissions.contains_key(&caller)
-            && submission_timestamp >= first_submission_timestamp;
+            && (is_first_submission || submission_timestamp >= first_submission_timestamp);
         if accepted {
             submissions.insert(caller, price);
             last_sub_time_mapper.set(current_timestamp);

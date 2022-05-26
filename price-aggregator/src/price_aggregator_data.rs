@@ -17,13 +17,13 @@ pub struct PriceFeed<M: ManagedTypeApi> {
     pub decimals: u8,
 }
 
-#[derive(TopEncode, TopDecode, TypeAbi)]
+#[derive(TopEncode, TopDecode, TypeAbi, Debug, PartialEq)]
 pub struct TimestampedPrice<M: ManagedTypeApi> {
     pub price: BigUint<M>,
     pub timestamp: u64,
 }
 
-#[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
+#[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi, Debug, PartialEq)]
 pub struct OracleStatus {
     pub accepted_submissions: u64,
     pub total_submissions: u64,
