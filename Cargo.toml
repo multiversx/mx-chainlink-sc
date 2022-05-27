@@ -28,3 +28,11 @@ version = "0.31.1"
 
 [dev-dependencies.elrond-wasm-debug]
 version = "0.31.1"
+
+[dev-dependencies.elrond-wasm-modules]
+version = "0.31.1"
+
+[dev-dependencies]
+num-bigint = "0.4.2"
+num-traits = "0.2"
+hex = "0.4"
