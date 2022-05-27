@@ -1,6 +1,7 @@
-use elrond_wasm_debug::{managed_address, managed_biguint, managed_buffer};
+use elrond_wasm_debug::{managed_address, managed_biguint, managed_buffer, rust_biguint};
 use price_aggregator::{
     price_aggregator_data::{OracleStatus, TimestampedPrice, TokenPair},
+    staking::StakingModule,
     PriceAggregator, MAX_ROUND_DURATION_SECONDS,
 };
 
@@ -164,4 +165,40 @@ fn price_agg_discarded_round_test() {
             );
         })
         .assert_ok();
+}
+
+#[test]
+fn price_agg_slashing_test() {
+    let rust_zero = rust_biguint!(0);
+    let mut pa_setup = PriceAggSetup::new(price_aggregator::contract_obj);
+    let oracles = pa_setup.oracles.clone();
+
+    // unpause
+    pa_setup.unpause();
+
+    pa_setup
+        .b_mock
+        .execute_tx(&oracles[0], &pa_setup.price_agg, &rust_zero, |sc| {
+            sc.vote_slash_member(managed_address!(&oracles[1]));
+        })
+        .assert_ok();
+
+    pa_setup
+        .b_mock
+        .execute_tx(&oracles[2], &pa_setup.price_agg, &rust_zero, |sc| {
+            sc.vote_slash_member(managed_address!(&oracles[1]));
+        })
+        .assert_ok();
+
+    pa_setup
+        .b_mock
+        .execute_tx(&oracles[0], &pa_setup.price_agg, &rust_zero, |sc| {
+            sc.slash_member(managed_address!(&oracles[1]));
+        })
+        .assert_ok();
+
+    // oracle 1 try submit after slashing
+    pa_setup
+        .submit(&oracles[1], 95, 10_000)
+        .assert_user_error("only oracles allowed");
 }
