@@ -17,10 +17,14 @@ elrond_wasm_node::wasm_endpoints! {
         pause
         removeOracles
         setSubmissionCount
+        slashMember
+        stake
         submission_count
         submit
         submitBatch
         unpause
+        unstake
+        voteSlashMember
     )
 }
 

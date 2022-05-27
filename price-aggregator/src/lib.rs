@@ -1,9 +1,11 @@
 #![no_std]
 
 elrond_wasm::imports!();
-pub mod median;
 
+pub mod median;
 pub mod price_aggregator_data;
+pub mod staking;
+
 use price_aggregator_data::{OracleStatus, PriceFeed, TimestampedPrice, TokenPair};
 
 const SUBMISSION_LIST_MAX_LEN: usize = 50;
@@ -12,14 +14,28 @@ pub const MAX_ROUND_DURATION_SECONDS: u64 = 1_800; // 30 minutes
 static PAUSED_ERROR_MSG: &[u8] = b"Contract is paused";
 
 #[elrond_wasm::contract]
-pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
+pub trait PriceAggregator:
+    elrond_wasm_modules::pause::PauseModule + staking::StakingModule
+{
     #[init]
     fn init(
         &self,
+        staking_token: TokenIdentifier,
+        staking_amount: BigUint,
+        slash_amount: BigUint,
+        slash_quorum: usize,
         submission_count: usize,
         decimals: u8,
         oracles: MultiValueEncoded<ManagedAddress>,
     ) {
+        self.init_staking_module(
+            &staking_token,
+            &staking_amount,
+            &slash_amount,
+            slash_quorum,
+            &oracles.to_vec(),
+        );
+
         let is_deploy_call = !self.was_contract_deployed().get();
         if is_deploy_call {
             self.decimals().set(decimals);
@@ -41,12 +57,13 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
         for oracle in oracles {
             if !oracle_mapper.contains_key(&oracle) {
                 let _ = oracle_mapper.insert(
-                    oracle,
+                    oracle.clone(),
                     OracleStatus {
                         total_submissions: 0,
                         accepted_submissions: 0,
                     },
                 );
+                self.add_board_member(oracle);
             }
         }
     }
@@ -59,6 +76,7 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
         let mut oracle_mapper = self.oracle_status();
         for oracle in oracles {
             let _ = oracle_mapper.remove(&oracle);
+            self.remove_board_member(&oracle);
         }
 
         self.require_valid_submission_count(submission_count);
@@ -175,9 +193,9 @@ pub trait PriceAggregator: elrond_wasm_modules::pause::PauseModule {
     }
 
     fn require_is_oracle(&self) {
+        let caller = self.blockchain().get_caller();
         require!(
-            self.oracle_status()
-                .contains_key(&self.blockchain().get_caller()),
+            self.oracle_status().contains_key(&caller) && self.is_staked_board_member(&caller),
             "only oracles allowed"
         );
     }

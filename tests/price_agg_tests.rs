@@ -1,4 +1,4 @@
-use elrond_wasm::types::{Address, MultiValueEncoded};
+use elrond_wasm::types::{Address, MultiValueEncoded, TokenIdentifier};
 use elrond_wasm_debug::{
     managed_address, managed_biguint, managed_buffer, rust_biguint,
     testing_framework::BlockchainStateWrapper,
@@ -6,6 +6,7 @@ use elrond_wasm_debug::{
 use elrond_wasm_modules::pause::PauseModule;
 use price_aggregator::{
     price_aggregator_data::{OracleStatus, TimestampedPrice, TokenPair},
+    staking::StakingModule,
     PriceAggregator, MAX_ROUND_DURATION_SECONDS,
 };
 
@@ -13,6 +14,10 @@ const SUBMISSION_COUNT: usize = 3;
 const DECIMALS: u8 = 0;
 static EGLD_TICKER: &[u8] = b"EGLD";
 static USD_TICKER: &[u8] = b"USDC";
+
+const STAKE_AMOUNT: u64 = 20;
+const SLASH_AMOUNT: u64 = 10;
+const SLASH_QUORUM: usize = 2;
 
 #[test]
 fn price_agg_submit_test() {
@@ -27,7 +32,7 @@ fn price_agg_submit_test() {
         Address::zero(),
     ];
     for i in 0..4 {
-        oracles[i] = b_mock.create_user_account(&rust_zero);
+        oracles[i] = b_mock.create_user_account(&rust_biguint!(STAKE_AMOUNT));
     }
 
     let price_agg = b_mock.create_sc_account(
@@ -48,9 +53,30 @@ fn price_agg_submit_test() {
                 oracle_args.push(managed_address!(oracle));
             }
 
-            sc.init(SUBMISSION_COUNT, DECIMALS, oracle_args);
+            sc.init(
+                TokenIdentifier::egld(),
+                managed_biguint!(STAKE_AMOUNT),
+                managed_biguint!(SLASH_AMOUNT),
+                SLASH_QUORUM,
+                SUBMISSION_COUNT,
+                DECIMALS,
+                oracle_args,
+            );
         })
         .assert_ok();
+
+    for i in 0..4 {
+        b_mock
+            .execute_tx(
+                &oracles[i],
+                &price_agg,
+                &rust_biguint!(STAKE_AMOUNT),
+                |sc| {
+                    sc.stake();
+                },
+            )
+            .assert_ok();
+    }
 
     // try submit while paused
     b_mock
@@ -161,7 +187,7 @@ fn price_agg_submit_round_ok_test() {
         Address::zero(),
     ];
     for i in 0..4 {
-        oracles[i] = b_mock.create_user_account(&rust_zero);
+        oracles[i] = b_mock.create_user_account(&rust_biguint!(STAKE_AMOUNT));
     }
 
     let price_agg = b_mock.create_sc_account(
@@ -182,10 +208,31 @@ fn price_agg_submit_round_ok_test() {
                 oracle_args.push(managed_address!(oracle));
             }
 
-            sc.init(SUBMISSION_COUNT, DECIMALS, oracle_args);
+            sc.init(
+                TokenIdentifier::egld(),
+                managed_biguint!(STAKE_AMOUNT),
+                managed_biguint!(SLASH_AMOUNT),
+                SLASH_QUORUM,
+                SUBMISSION_COUNT,
+                DECIMALS,
+                oracle_args,
+            );
             sc.unpause_endpoint();
         })
         .assert_ok();
+
+    for i in 0..4 {
+        b_mock
+            .execute_tx(
+                &oracles[i],
+                &price_agg,
+                &rust_biguint!(STAKE_AMOUNT),
+                |sc| {
+                    sc.stake();
+                },
+            )
+            .assert_ok();
+    }
 
     // submit first
     b_mock
@@ -265,7 +312,7 @@ fn price_agg_discarded_round_test() {
         Address::zero(),
     ];
     for i in 0..4 {
-        oracles[i] = b_mock.create_user_account(&rust_zero);
+        oracles[i] = b_mock.create_user_account(&rust_biguint!(STAKE_AMOUNT));
     }
 
     let price_agg = b_mock.create_sc_account(
@@ -286,10 +333,31 @@ fn price_agg_discarded_round_test() {
                 oracle_args.push(managed_address!(oracle));
             }
 
-            sc.init(SUBMISSION_COUNT, DECIMALS, oracle_args);
+            sc.init(
+                TokenIdentifier::egld(),
+                managed_biguint!(STAKE_AMOUNT),
+                managed_biguint!(SLASH_AMOUNT),
+                SLASH_QUORUM,
+                SUBMISSION_COUNT,
+                DECIMALS,
+                oracle_args,
+            );
             sc.unpause_endpoint();
         })
         .assert_ok();
+
+    for i in 0..4 {
+        b_mock
+            .execute_tx(
+                &oracles[i],
+                &price_agg,
+                &rust_biguint!(STAKE_AMOUNT),
+                |sc| {
+                    sc.stake();
+                },
+            )
+            .assert_ok();
+    }
 
     // submit first
     b_mock
