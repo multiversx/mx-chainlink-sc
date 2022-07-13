@@ -19,7 +19,7 @@ const ROUND_MAX: u64 = u64::MAX;
 #[elrond_wasm::contract]
 pub trait Aggregator {
     #[storage_mapper("token_id")]
-    fn token_id(&self) -> SingleValueMapper<TokenIdentifier>;
+    fn token_id(&self) -> SingleValueMapper<EgldOrEsdtTokenIdentifier>;
 
     // Round related params
     #[storage_mapper("payment_amount")]
@@ -79,7 +79,7 @@ pub trait Aggregator {
     #[init]
     fn init(
         &self,
-        token_id: TokenIdentifier,
+        token_id: EgldOrEsdtTokenIdentifier,
         payment_amount: BigUint,
         timeout: u64,
         min_submission_value: BigUint,
@@ -105,7 +105,8 @@ pub trait Aggregator {
 
     #[endpoint(addFunds)]
     #[payable("*")]
-    fn add_funds(&self, #[payment] payment: BigUint, #[payment_token] token: TokenIdentifier) {
+    fn add_funds(&self) {
+        let (token, payment) = self.call_value().egld_or_single_fungible_esdt();
         require!(token == self.token_id().get(), "Wrong token type");
         self.recorded_funds()
             .update(|recorded_funds| recorded_funds.available += &payment);
@@ -303,7 +304,7 @@ pub trait Aggregator {
         self.oracles().insert(oracle, oracle_status);
 
         self.send()
-            .direct(&recipient, &self.token_id().get(), 0, &amount, b"");
+            .direct(&recipient, &self.token_id().get(), 0, &amount);
     }
 
     #[view(withdrawableAddedFunds)]
@@ -327,7 +328,7 @@ pub trait Aggregator {
         let remaining = &deposit - &amount;
         self.set_deposit(caller, &remaining);
         self.send()
-            .direct(caller, &self.token_id().get(), 0, &amount, b"withdraw");
+            .direct(caller, &self.token_id().get(), 0, &amount);
     }
 
     #[view(getAdmin)]

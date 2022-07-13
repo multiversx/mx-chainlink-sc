@@ -1,4 +1,4 @@
-use elrond_wasm::types::{Address, MultiValueEncoded, TokenIdentifier};
+use elrond_wasm::types::{Address, MultiValueEncoded, EgldOrEsdtTokenIdentifier};
 use elrond_wasm_debug::{
     managed_address, managed_biguint, managed_buffer, rust_biguint,
     testing_framework::{BlockchainStateWrapper, ContractObjWrapper},
@@ -58,7 +58,7 @@ where
                 }
 
                 sc.init(
-                    TokenIdentifier::egld(),
+                    EgldOrEsdtTokenIdentifier::egld(),
                     managed_biguint!(STAKE_AMOUNT),
                     managed_biguint!(SLASH_AMOUNT),
                     SLASH_QUORUM,
