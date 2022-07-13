@@ -70,22 +70,15 @@ pub trait EgldEsdtExchange {
     #[only_owner]
     #[payable("*")]
     #[endpoint(deposit)]
-    fn deposit(
-        &self,
-        #[payment] payment: BigUint,
-        #[payment_token] payment_token: TokenIdentifier,
-    ) {
+    fn deposit(&self) {
+        let (payment_token, payment) = self.call_value().egld_or_single_fungible_esdt();
         self.increase_balance(&payment_token, &payment);
     }
 
     #[payable("*")]
     #[endpoint(exchange)]
-    fn exchange(
-        &self,
-        #[payment] payment: BigUint,
-        #[payment_token] source_token: TokenIdentifier,
-        target_token: TokenIdentifier,
-    ) {
+    fn exchange(&self, target_token: EgldOrEsdtTokenIdentifier) {
+        let (source_token, payment) = self.call_value().egld_or_single_fungible_esdt();
         require!(payment > 0, "Payment must be more than 0");
         require!(
             self.balance().contains_key(&source_token),
@@ -112,8 +105,8 @@ pub trait EgldEsdtExchange {
     fn check_aggregator_tokens(
         &self,
         description: DescriptionVec,
-        source_token: &TokenIdentifier,
-        target_token: &TokenIdentifier,
+        source_token: &EgldOrEsdtTokenIdentifier,
+        target_token: &EgldOrEsdtTokenIdentifier,
     ) -> Result<bool, ManagedBuffer> {
         let delimiter_position = description
             .as_slice()
@@ -123,8 +116,8 @@ pub trait EgldEsdtExchange {
                 "Invalid aggregator description format (expected 2 tokens)".as_bytes(),
             ))?;
         let (first, second) = description.split_at(delimiter_position);
-        let first_token = TokenIdentifier::from(first);
-        let second_token = TokenIdentifier::from(second);
+        let first_token = EgldOrEsdtTokenIdentifier::parse(ManagedBuffer::new_from_bytes(first));
+        let second_token = EgldOrEsdtTokenIdentifier::parse(ManagedBuffer::new_from_bytes(second));
         if &first_token == source_token && &second_token == target_token {
             return Result::Ok(false);
         }
@@ -141,8 +134,8 @@ pub trait EgldEsdtExchange {
     fn convert(
         &self,
         amount: &BigUint,
-        source_token: &TokenIdentifier,
-        target_token: &TokenIdentifier,
+        source_token: &EgldOrEsdtTokenIdentifier,
+        target_token: &EgldOrEsdtTokenIdentifier,
         multiplier: &BigUint,
         divisor: &BigUint,
         precision_factor: &BigUint,
@@ -167,8 +160,8 @@ pub trait EgldEsdtExchange {
     fn get_converted_sum(
         &self,
         payment: &BigUint,
-        source_token: &TokenIdentifier,
-        target_token: &TokenIdentifier,
+        source_token: &EgldOrEsdtTokenIdentifier,
+        target_token: &EgldOrEsdtTokenIdentifier,
         exchange_rate: &BigUint,
         decimals: usize,
         reverse_exchange: bool,
@@ -201,8 +194,8 @@ pub trait EgldEsdtExchange {
         &self,
         result: ManagedAsyncCallResult<OptionalValue<Round<Self::Api>>>,
         payment: &BigUint,
-        source_token: &TokenIdentifier,
-        target_token: &TokenIdentifier,
+        source_token: &EgldOrEsdtTokenIdentifier,
+        target_token: &EgldOrEsdtTokenIdentifier,
     ) -> Result<(BigUint, ManagedBuffer), ManagedBuffer> {
         match result {
             ManagedAsyncCallResult::Ok(optional_result_round) => {
@@ -258,8 +251,8 @@ pub trait EgldEsdtExchange {
         #[call_result] result: ManagedAsyncCallResult<OptionalValue<Round<Self::Api>>>,
         caller: ManagedAddress,
         payment: BigUint,
-        source_token: TokenIdentifier,
-        target_token: TokenIdentifier,
+        source_token: EgldOrEsdtTokenIdentifier,
+        target_token: EgldOrEsdtTokenIdentifier,
     ) {
         match self.try_convert(result, &payment, &source_token, &target_token) {
             Result::Ok((converted_payment, conversion_message)) => {
@@ -267,21 +260,22 @@ pub trait EgldEsdtExchange {
                 message.append(&conversion_message);
                 message.append_bytes(b")");
 
+                //TODO - save message in event
                 self.send()
-                    .direct(&caller, &target_token, 0, &converted_payment, message);
+                    .direct(&caller, &target_token, 0, &converted_payment);
             }
             Result::Err(error) => {
                 let mut message = ManagedBuffer::new_from_bytes(b"refund (");
                 message.append(&error);
                 message.append_bytes(b")");
 
-                self.send()
-                    .direct(&caller, &source_token, 0, &payment, message);
+                //TODO - save message in event
+                self.send().direct(&caller, &source_token, 0, &payment);
             }
         }
     }
 
-    fn increase_balance(&self, token_identifier: &TokenIdentifier, amount: &BigUint) {
+    fn increase_balance(&self, token_identifier: &EgldOrEsdtTokenIdentifier, amount: &BigUint) {
         let mut balance = self
             .balance()
             .get(&token_identifier)
@@ -292,7 +286,7 @@ pub trait EgldEsdtExchange {
 
     fn checked_decrease_balance(
         &self,
-        token_identifier: &TokenIdentifier,
+        token_identifier: &EgldOrEsdtTokenIdentifier,
         amount: &BigUint,
     ) -> Result<(), ManagedBuffer> {
         match self.balance().get(&token_identifier) {
@@ -301,7 +295,7 @@ pub trait EgldEsdtExchange {
                     let mut err_msg = ManagedBuffer::new_from_bytes(b"Insufficient balance: only ");
                     err_msg.append_bytes(format_biguint(balance).as_slice());
                     err_msg.append_bytes(b" of ");
-                    err_msg.append(token_identifier.as_managed_buffer());
+                    err_msg.append(&token_identifier.clone().into_name());
                     err_msg.append_bytes(b" available");
 
                     Result::Err(err_msg)
@@ -312,7 +306,7 @@ pub trait EgldEsdtExchange {
             }
             None => {
                 let mut err_msg = ManagedBuffer::new_from_bytes(b"No ");
-                err_msg.append(token_identifier.as_managed_buffer());
+                err_msg.append(&token_identifier.clone().into_name());
                 err_msg.append_bytes(b" tokens are available");
 
                 Result::Err(err_msg)
@@ -320,7 +314,7 @@ pub trait EgldEsdtExchange {
         }
     }
 
-    fn decrease_balance(&self, token_identifier: &TokenIdentifier, amount: &BigUint) {
+    fn decrease_balance(&self, token_identifier: &EgldOrEsdtTokenIdentifier, amount: &BigUint) {
         let mut balance = self
             .balance()
             .get(&token_identifier)
@@ -332,22 +326,22 @@ pub trait EgldEsdtExchange {
     fn conversion_message(
         &self,
         payment: &BigUint,
-        source_token: &TokenIdentifier,
+        source_token: &EgldOrEsdtTokenIdentifier,
         rate: &BigUint,
         rate_precision: usize,
         converted_token: &BigUint,
-        target_token: &TokenIdentifier,
+        target_token: &EgldOrEsdtTokenIdentifier,
     ) -> Result<ManagedBuffer, ManagedBuffer> {
         let mut message = ManagedBuffer::new_from_bytes(b"conversion from ");
         message.append_bytes(format_biguint(payment.clone()).as_slice());
         message.append_bytes(b" of ");
-        message.append(source_token.as_managed_buffer());
+        message.append(&source_token.clone().into_name());
         message.append_bytes(b", using exchange rate ");
         message.append_bytes(format_fixed_precision(rate.clone(), rate_precision).as_slice());
         message.append_bytes(b", results in ");
         message.append_bytes(format_biguint(converted_token.clone()).as_slice());
         message.append_bytes(b" of ");
-        message.append(target_token.as_managed_buffer());
+        message.append(&target_token.clone().into_name());
 
         Result::Ok(message)
     }
@@ -356,7 +350,7 @@ pub trait EgldEsdtExchange {
     fn aggregator(&self) -> SingleValueMapper<ManagedAddress>;
 
     #[storage_mapper("balance")]
-    fn balance(&self) -> MapMapper<TokenIdentifier, BigUint>;
+    fn balance(&self) -> MapMapper<EgldOrEsdtTokenIdentifier, BigUint>;
 
     #[proxy]
     fn aggregator_interface_proxy(&self, to: ManagedAddress) -> aggregator::Proxy<Self::Api>;
