@@ -1,22 +1,23 @@
 {
     "terminal.integrated.env.linux": {
-        "PATH": "${env:HOME}/elrondsdk/vendor-rust/bin:${env:HOME}/elrondsdk/erdpy-venv/bin:${env:HOME}/elrondsdk/vmtools:${env:HOME}/elrondsdk/nodejs/latest/bin:${env:PATH}",
-        "VIRTUAL_ENV": "${env:HOME}/elrondsdk/erdpy-venv",
-        "RUSTUP_HOME": "${env:HOME}/elrondsdk/vendor-rust",
-        "CARGO_HOME": "${env:HOME}/elrondsdk/vendor-rust"
+        "PATH": "${env:HOME}/multiversx-sdk/vendor-rust/bin:${env:HOME}/multiversx-sdk/erdpy-venv/bin:${env:HOME}/multiversx-sdk/vmtools:${env:HOME}/multiversx-sdk/nodejs/latest/bin:${env:PATH}",
+        "VIRTUAL_ENV": "${env:HOME}/multiversx-sdk/erdpy-venv",
+        "RUSTUP_HOME": "${env:HOME}/multiversx-sdk/vendor-rust",
+        "CARGO_HOME": "${env:HOME}/multiversx-sdk/vendor-rust"
     },
     "terminal.integrated.env.osx": {
-        "PATH": "${env:HOME}/elrondsdk/vendor-rust/bin:${env:HOME}/elrondsdk/erdpy-venv/bin:${env:HOME}/elrondsdk/vmtools:${env:HOME}/elrondsdk/nodejs/latest/bin:${env:PATH}",
-        "VIRTUAL_ENV": "${env:HOME}/elrondsdk/erdpy-venv",
-        "RUSTUP_HOME": "${env:HOME}/elrondsdk/vendor-rust",
-        "CARGO_HOME": "${env:HOME}/elrondsdk/vendor-rust"
+        "PATH": "${env:HOME}/multiversx-sdk/vendor-rust/bin:${env:HOME}/multiversx-sdk/erdpy-venv/bin:${env:HOME}/multiversx-sdk/vmtools:${env:HOME}/multiversx-sdk/nodejs/latest/bin:${env:PATH}",
+        "VIRTUAL_ENV": "${env:HOME}/multiversx-sdk/erdpy-venv",
+        "RUSTUP_HOME": "${env:HOME}/multiversx-sdk/vendor-rust",
+        "CARGO_HOME": "${env:HOME}/multiversx-sdk/vendor-rust"
     },
     "terminal.integrated.environmentChangesIndicator": "on",
     "terminal.integrated.inheritEnv": true,
     "workbench.dialogs.customEnabled": true,
-    "rust-client.rustupPath": "${env:HOME}/elrondsdk/vendor-rust/bin/rustup",
-    "rust-client.rlsPath": "${env:HOME}/elrondsdk/vendor-rust/bin/rls",
+    "rust-client.rustupPath": "${env:HOME}/multiversx-sdk/vendor-rust/bin/rustup",
+    "rust-client.rlsPath": "${env:HOME}/multiversx-sdk/vendor-rust/bin/rls",
     "rust-client.disableRustup": true,
     "rust-client.autoStartRls": false,
-    "git.ignoreLimitWarning": true
+    "git.ignoreLimitWarning": true,
+    "rust-analyzer.showUnlinkedFileNotification": false
 }

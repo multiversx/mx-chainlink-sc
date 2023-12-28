@@ -7,8 +7,6 @@ publish = false
 [dependencies.aggregator]
 path = ".."
 
-[dependencies.elrond-wasm]
-version = "0.34.0"
-
-[dependencies.elrond-wasm-debug]
-version = "0.34.0"
+[dependencies.multiversx-sc-meta]
+version = "0.45.2"
+default-features = false

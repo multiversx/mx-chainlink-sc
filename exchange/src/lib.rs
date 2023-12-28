@@ -1,7 +1,7 @@
 #![no_std]
 
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
 extern crate aggregator;
 use aggregator::aggregator_interface::DescriptionVec;
@@ -60,7 +60,7 @@ pub fn format_fixed_precision<M: ManagedTypeApi>(
     left.chain(dot).chain(right).cloned().collect()
 }
 
-#[elrond_wasm::contract]
+#[multiversx_sc::contract]
 pub trait EgldEsdtExchange {
     #[init]
     fn init(&self, aggregator: ManagedAddress) {

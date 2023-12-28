@@ -4,7 +4,7 @@
 
 #![no_std]
 
-elrond_wasm_node::wasm_endpoints! {
+multiversx_sc_wasm_adapter::wasm_endpoints! {
     oracle
     (
         addAuthorization
@@ -17,4 +17,4 @@ elrond_wasm_node::wasm_endpoints! {
     )
 }
 
-elrond_wasm_node::wasm_empty_callback! {}
+multiversx_sc_wasm_adapter::wasm_empty_callback! {}

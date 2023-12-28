@@ -1,3 +1,3 @@
 fn main() {
-    elrond_wasm_debug::meta::perform::<price_aggregator::AbiProvider>();
+    multiversx_sc_meta::cli_main::<price_aggregator::AbiProvider>();
 }

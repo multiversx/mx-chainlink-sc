@@ -1,10 +1,10 @@
 #![no_std]
 
-elrond_wasm::imports!();
+multiversx_sc::imports!();
 
 use price_aggregator_proxy::{DOLLAR_TICKER, EGLD_TICKER};
 
-#[elrond_wasm::contract]
+#[multiversx_sc::contract]
 pub trait ModuleTest: price_aggregator_proxy::PriceAggregatorModule {
     #[init]
     fn init(&self, price_aggregator_address: ManagedAddress) {

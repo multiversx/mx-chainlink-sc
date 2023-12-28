@@ -1,7 +1,6 @@
 #![no_std]
-#![feature(generic_associated_types)]
 
-elrond_wasm::imports!();
+multiversx_sc::imports!();
 mod aggregator_data;
 pub mod aggregator_interface;
 pub mod median;
@@ -16,7 +15,7 @@ use aggregator_interface::{DescriptionVec, Round, SingleSubmissionValuesVec};
 const RESERVE_ROUNDS: u64 = 2;
 const ROUND_MAX: u64 = u64::MAX;
 
-#[elrond_wasm::contract]
+#[multiversx_sc::contract]
 pub trait Aggregator {
     #[storage_mapper("token_id")]
     fn token_id(&self) -> SingleValueMapper<EgldOrEsdtTokenIdentifier>;

@@ -3,9 +3,9 @@
 mod client_data;
 use client_data::ClientData;
 
-elrond_wasm::imports!();
+multiversx_sc::imports!();
 
-#[elrond_wasm::contract]
+#[multiversx_sc::contract]
 pub trait Client {
     #[storage_mapper("oracle_address")]
     fn oracle_address(&self) -> SingleValueMapper<ManagedAddress>;

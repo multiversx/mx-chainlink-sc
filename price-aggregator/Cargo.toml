@@ -1,21 +1,22 @@
 [package]
 name = "price-aggregator"
-version = "0.0.1"
-authors = [ "Claudiu-Marcel Bruda <claudiu.bruda@elrond.com>",]
+version = "0.0.0"
+authors = ["Claudiu-Marcel Bruda <claudiu.bruda@elrond.com>"]
 edition = "2018"
 publish = false
 
 [lib]
 path = "src/lib.rs"
 
-[dependencies.elrond-wasm]
-version = "0.34.0"
+[dependencies.multiversx-sc]
+version = "0.45.2"
 
-[dependencies.elrond-wasm-modules]
-version = "0.34.0"
+[dependencies.multiversx-sc-modules]
+version = "0.45.2"
 
-[dependencies]
-arrayvec = { version = "0.7.1", default-features = false }
+[dependencies.arrayvec]
+version = "0.7.1"
+default-features = false
 
-[dev-dependencies.elrond-wasm-debug]
-version = "0.34.0"
+[dev-dependencies.multiversx-sc-scenario]
+version = "0.45.2"

@@ -1,6 +1,6 @@
 #![no_std]
 
-elrond_wasm::imports!();
+multiversx_sc::imports!();
 
 pub mod median;
 pub mod price_aggregator_data;
@@ -13,9 +13,9 @@ const FIRST_SUBMISSION_TIMESTAMP_MAX_DIFF_SECONDS: u64 = 6;
 pub const MAX_ROUND_DURATION_SECONDS: u64 = 1_800; // 30 minutes
 static PAUSED_ERROR_MSG: &[u8] = b"Contract is paused";
 
-#[elrond_wasm::contract]
+#[multiversx_sc::contract]
 pub trait PriceAggregator:
-    elrond_wasm_modules::pause::PauseModule + staking::StakingModule
+    multiversx_sc_modules::pause::PauseModule + staking::StakingModule
 {
     #[init]
     fn init(
@@ -327,9 +327,9 @@ pub trait PriceAggregator:
         result
     }
 
-    fn require_not_paused(&self) {
-        require!(self.not_paused(), PAUSED_ERROR_MSG);
-    }
+    // fn require_not_paused(&self) {
+    //     require!(self.not_paused(), PAUSED_ERROR_MSG);
+    // }
 
     #[storage_mapper("was_contract_deployed")]
     fn was_contract_deployed(&self) -> SingleValueMapper<bool>;
