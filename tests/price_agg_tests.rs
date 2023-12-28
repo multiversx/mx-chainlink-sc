@@ -1,4 +1,4 @@
-use elrond_wasm_debug::{managed_address, managed_biguint, managed_buffer, rust_biguint};
+use multiversx_sc_scenario::{managed_address, managed_biguint, managed_buffer, rust_biguint};
 use price_aggregator::{
     price_aggregator_data::{OracleStatus, TimestampedPrice, TokenPair},
     staking::StakingModule,

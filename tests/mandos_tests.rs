@@ -1,14 +1,14 @@
-use elrond_wasm_debug::*;
+use multiversx_sc_scenario::*;
 
-fn world() -> BlockchainMock {
-    let mut blockchain = BlockchainMock::new();
-    blockchain.register_contract_builder("file:client/output/client.wasm", client::ContractBuilder);
-    blockchain.register_contract_builder("file:oracle/output/oracle.wasm", oracle::ContractBuilder);
-    blockchain.register_contract_builder(
+fn world() -> ScenarioWorld {
+    let mut blockchain = ScenarioWorld::new();
+    blockchain.register_contract("file:client/output/client.wasm", client::ContractBuilder);
+    blockchain.register_contract("file:oracle/output/oracle.wasm", oracle::ContractBuilder);
+    blockchain.register_contract(
         "file:aggregator/output/aggregator.wasm",
         aggregator::ContractBuilder,
     );
-    blockchain.register_contract_builder(
+    blockchain.register_contract(
         "file:price-aggregator/output/price-aggregator.wasm",
         price_aggregator::ContractBuilder,
     );
@@ -17,15 +17,15 @@ fn world() -> BlockchainMock {
 
 #[test]
 fn init() {
-    elrond_wasm_debug::mandos_rs("mandos/init.scen.json", world());
+    multiversx_sc_scenario::run_rs("mandos/init.scen.json", world());
 }
 
 #[test]
 fn client_request() {
-    elrond_wasm_debug::mandos_rs("mandos/client-request.scen.json", world());
+    multiversx_sc_scenario::run_rs("mandos/client-request.scen.json", world());
 }
 
 #[test]
 fn aggregator() {
-    elrond_wasm_debug::mandos_rs("mandos/aggregator.scen.json", world());
+    multiversx_sc_scenario::run_rs("mandos/aggregator.scen.json", world());
 }

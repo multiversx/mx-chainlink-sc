@@ -1,8 +1,8 @@
 use aggregator::aggregator_interface::{Submission, MAX_SUBMISSION_VALUES};
 use aggregator::median;
-use elrond_wasm::arrayvec::ArrayVec;
-use elrond_wasm::types::BigUint;
-use elrond_wasm_debug::DebugApi;
+use multiversx_sc::arrayvec::ArrayVec;
+use multiversx_sc::types::BigUint;
+use multiversx_sc_scenario::DebugApi;
 
 fn to_vec_biguint(v: Vec<u32>) -> ArrayVec<BigUint<DebugApi>, MAX_SUBMISSION_VALUES> {
     v.iter()

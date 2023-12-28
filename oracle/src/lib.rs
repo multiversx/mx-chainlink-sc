@@ -4,19 +4,19 @@ extern crate aggregator;
 mod oracle_request;
 use oracle_request::{OracleRequest, RequestView};
 
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
 mod client_proxy {
-    elrond_wasm::imports!();
-    #[elrond_wasm::derive::proxy]
+    multiversx_sc::imports!();
+    #[multiversx_sc::derive::proxy]
     pub trait Client {
         #[endpoint]
         fn reply(&self, nonce: u64, answer: ManagedBuffer);
     }
 }
 
-#[elrond_wasm::contract]
+#[multiversx_sc::contract]
 pub trait Oracle {
     #[storage_mapper("nonces")]
     fn nonces(&self) -> MapMapper<ManagedAddress, u64>;

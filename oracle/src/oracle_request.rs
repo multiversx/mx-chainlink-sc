@@ -1,9 +1,9 @@
-use elrond_wasm::{
+use multiversx_sc::{
     api::ManagedTypeApi,
     types::{ManagedAddress, ManagedBuffer},
 };
 
-elrond_wasm::derive_imports!();
+multiversx_sc::derive_imports!();
 
 #[derive(NestedEncode, NestedDecode, TopEncode, TopDecode, TypeAbi)]
 pub struct OracleRequest<M: ManagedTypeApi> {

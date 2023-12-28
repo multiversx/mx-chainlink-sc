@@ -1,5 +1,5 @@
 [dependencies.price-aggregator-proxy]
-git = "https://github.com/ElrondNetwork/sc-chainlink-rs"
+git = "https://github.com/multiversx/mx-chainlink-sc"
 
 -----------------------------------------------------------------------------------
 

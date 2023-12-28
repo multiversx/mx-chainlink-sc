@@ -1,7 +1,7 @@
 #![allow(non_snake_case)]
 
-elrond_wasm::imports!();
-elrond_wasm::derive_imports!();
+multiversx_sc::imports!();
+multiversx_sc::derive_imports!();
 
 pub const MAX_SUBMISSION_VALUES: usize = 100;
 pub type SingleSubmissionValuesVec<M> = ArrayVec<BigUint<M>, MAX_SUBMISSION_VALUES>;

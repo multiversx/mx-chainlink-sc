@@ -1,11 +1,11 @@
-use elrond_wasm::types::{Address, MultiValueEncoded, EgldOrEsdtTokenIdentifier};
-use elrond_wasm_debug::{
+use multiversx_sc::types::{Address, MultiValueEncoded, EgldOrEsdtTokenIdentifier};
+use multiversx_sc_scenario::{
     managed_address, managed_biguint, managed_buffer, rust_biguint,
-    testing_framework::{BlockchainStateWrapper, ContractObjWrapper},
-    tx_mock::TxResult,
+    whitebox::{BlockchainStateWrapper, ContractObjWrapper},
+    whitebox::TxResult,
     DebugApi,
 };
-use elrond_wasm_modules::pause::PauseModule;
+use multiversx_sc_modules::pause::PauseModule;
 use price_aggregator::{staking::StakingModule, PriceAggregator};
 
 pub const NR_ORACLES: usize = 4;

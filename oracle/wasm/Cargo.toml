@@ -1,7 +1,7 @@
 [package]
 name = "oracle-wasm"
 version = "0.0.0"
-authors = [ "Claudiu-Marcel Bruda <claudiu.bruda@elrond.com>",]
+authors = ["Claudiu-Marcel Bruda <claudiu.bruda@elrond.com>"]
 edition = "2018"
 publish = false
 
@@ -18,12 +18,8 @@ panic = "abort"
 [dependencies.oracle]
 path = ".."
 
-[dependencies.elrond-wasm-node]
-version = "0.34.0"
-
-[dependencies.elrond-wasm-output]
-version = "0.34.0"
-features = ["wasm-output-mode"]
+[dependencies.multiversx-sc-wasm-adapter]
+version = "0.45.2"
 
 [workspace]
 members = ["."]

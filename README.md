@@ -1,6 +1,6 @@
 # Chainlink smart contracts
 
-This repository contains a collection of smart contracts for the Elrond network which interact with the Chainlink ecosystem.
+This repository contains a collection of smart contracts for the MultiversX network which interact with the Chainlink ecosystem.
 
 ## Overview - smart contracts
 
@@ -103,8 +103,8 @@ Inside the `interaction` folder you can find snippets which help in setting up a
 
 ### Setting up the testnet
 
-First, check the guide on [how to set up a local testnet](https://docs.elrond.com/developers/setup-local-testnet/).
-Important note: these contracts rely on callback functionality which normally gets enabled only at the start of epoch 4 (controlled by the `RepairCallbackEnableEpoch` config parameter). If starting with a fresh testnet (which hasn't reached epoch 4), it might be worth it to use the config provided in `interaction/config.toml` (which sets the starting epoch for all flags to epoch 0) and replace `~/elrondsdk/elrond_go/cmd/node/config/config.toml`. Otherwise, a fresh testnet takes 40 mins to reach epoch 4 - in which case this workaround isn't necessary.
+First, check the guide on [how to set up a local testnet](https://docs.multiversx.com/developers/setup-local-testnet/).
+Important note: these contracts rely on callback functionality which normally gets enabled only at the start of epoch 4 (controlled by the `RepairCallbackEnableEpoch` config parameter).
 
 ### Postman setup
 

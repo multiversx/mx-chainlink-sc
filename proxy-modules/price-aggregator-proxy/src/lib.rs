@@ -1,6 +1,6 @@
 #![no_std]
 
-elrond_wasm::imports!();
+multiversx_sc::imports!();
 
 pub const EGLD_TICKER: &[u8] = b"EGLD";
 pub const DOLLAR_TICKER: &[u8] = b"USD";
@@ -9,9 +9,9 @@ pub type AggregatorResultAsMultiResult<M> =
     MultiValue5<u32, ManagedBuffer<M>, ManagedBuffer<M>, BigUint<M>, u8>;
 
 mod price_aggregator_proxy {
-    elrond_wasm::imports!();
+    multiversx_sc::imports!();
 
-    #[elrond_wasm::proxy]
+    #[multiversx_sc::proxy]
     pub trait PriceAggregator {
         #[view(latestPriceFeedOptional)]
         fn latest_price_feed_optional(
@@ -44,7 +44,7 @@ impl<M: ManagedTypeApi> From<AggregatorResultAsMultiResult<M>> for AggregatorRes
     }
 }
 
-#[elrond_wasm::module]
+#[multiversx_sc::module]
 pub trait PriceAggregatorModule {
     #[only_owner]
     #[endpoint(setPriceAggregatorAddress)]
